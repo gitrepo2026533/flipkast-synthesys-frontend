@@ -1,0 +1,17 @@
+.text{
+    display: flex;
+    justify-content: center;
+    justify-content: space-between;
+
+    align-items: center;
+    padding: 10;
+    margin: 10;
+    border-radius: 10;
+    height: 10;
+    width: 10;
+    max-width: 10;
+    max-height: 10;
+    overflow-y: scroll;
+    flex-direction: row;
+    border-bottom: 1;
+}

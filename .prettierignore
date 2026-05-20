@@ -1,0 +1,10 @@
+.*
+build
+node_modules
+public
+out
+
+react-app-env.d.ts
+package.json
+README.md
+tsconfig.json

@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+}
+
+h1, h2, h3, h4, h5, h6, p, ul {
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+li {
+  list-style-type: none;
+}
+button {
+  outline: none;
+  border: none;
+  cursor: pointer;
+
+}
+
+input:focus, button:focus, textarea:focus, select:focus {
+  outline: none;
+  border: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+textarea {
+  resize: none;
+}
+input {
+  border: none;
+  outline: none;
+}
+
+* {
+  padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+.download-popup {
+  width: 500px;
+}

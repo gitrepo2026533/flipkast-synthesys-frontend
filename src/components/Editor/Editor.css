@@ -1,0 +1,69 @@
+.RichEditor-editor div {
+  display: inline-block;
+}
+
+.RichEditor-editor div[class=""],
+.RichEditor-editor div[class=""] > div {
+  display: inline;
+  position: relative;
+  z-index: -1;
+}
+
+div[class=""]:has(span):has(br) {
+  display: inline-block !important;
+}
+
+.RichEditor-editor .DraftEditor-root,
+.RichEditor-editor .DraftEditor-root .public-DraftEditorPlaceholder-root {
+  width: 100%;
+}
+
+.RichEditor-editor .public-DraftEditorPlaceholder-inner {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 28px;
+  color: #191b1f66;
+}
+
+.RichEditor-editor .public-DraftStyleDefault-block {
+  margin-right: 5px;
+}
+
+.RichEditor-editor
+  .DraftEditor-root
+  .DraftEditor-editorContainer
+  .public-DraftEditor-content
+  div
+  div:nth-child(odd)
+  div
+  > span {
+  padding: 4px;
+  border: 1px solid transparent;
+  font-size: 14px;
+}
+
+.public-DraftEditor-content {
+  overflow-wrap: anywhere !important;
+}
+
+div[data-contents="true"] > div:nth-child(2n) {
+  -webkit-user-modify: read-only;
+}
+
+div[data-contents="true"] > div {
+  line-height: 32px;
+}
+
+.btn {
+  display: inline-block;
+  border: 2px solid orange;
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  margin: 10px 0 0 10px;
+}
+
+.RichEditorContainer {
+  margin-top: 8px;
+}
