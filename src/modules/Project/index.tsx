@@ -7,55 +7,72 @@ import RightPanelSide from "./components/RightPanel";
 import HeaderActions from "./components/HeaderActions";
 import LeftSideProfileSection from "./components/LeftSideProfileSection";
 import { useEffect, useState } from "react";
-import { response } from "./data";
+import { useDispatch, useSelector } from "react-redux";
+import { getProject, getProjectLoading } from "../../redux/reducers/projectReducer";
+import { getVideoByProjectIdServer } from "../../redux/actions/projectAction";
+import CircularProgress from "../../components/Icons/CircularProgress";
 
 const Project = () => {
+  const dispatch = useDispatch();
   const { projectId } = useParams();
-  const [projectData, setProjectData] = useState({});
-  const [slides, setSlides] = useState([]);
-  const [currentSlides, setCurrentSlides] = useState([]);
-  const [selectedVideo, setSelectedVideo] = useState("");  
+
+  const projectData = useSelector(getProject);
+  const [slides, setSlides] = useState<any[]>([]);
+  const [selectedSlide, setSelectedSlide] = useState<any>(null);
+  const isLoading = useSelector(getProjectLoading);
 
   useEffect(() => {
-    if (!projectId) return;
-
-    // Find project by projectId
-    const selectedProject = response.find((p) => p.projectId === Number(projectId));
-
-    if (selectedProject) {
-      setProjectData(selectedProject);
-
-      // Set slides
-      const projectSlides: any = selectedProject?.slides || [];
-      setSlides(projectSlides);
-
-      // Set first current slide
-      setCurrentSlides(projectSlides[projectSlides.length - 1] || {});
+    if (projectId) {
+      dispatch(
+        getVideoByProjectIdServer(
+          Number(projectId)
+        )
+      );
     }
   }, [projectId]);
 
-  console.log("SlideData: ", slides);
-  console.log("currebtSlides: ", currentSlides);
-  console.log("projectData: ", projectData);
+  useEffect(() => {
+    if (!projectData) return;
+
+    const projectSlides: any[] = projectData?.slides || [];
+    setSlides(projectSlides);
+
+    setSelectedSlide((prev: any) => {
+      if (prev?.slideId) {
+        const updatedCurrentSlide = projectSlides.find((slide: any) => slide.slideId === prev.slideId);
+        return updatedCurrentSlide || projectSlides[projectSlides.length - 1] || projectSlides[0] || null;
+      }
+
+      return projectSlides[projectSlides.length - 1] || projectSlides[0] || null;
+    });
+  }, [projectData]);
 
   return (
     <Wrapper>
-      <HeaderActions projectData={projectData} />
-      <PageLayout>
-        <LeftSideProfileSection />
-        <LeftPanelSide
-          currentSlides={currentSlides}
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />
-        <RightPanelSide
-          selectedVideo={selectedVideo}
-          setCurrentSlides={setCurrentSlides}
-          slides={slides}
-          currentSlides={currentSlides}
-          setSlides={setSlides}
-        />
-      </PageLayout>
+      {isLoading ? (
+        <LoaderWrapper>
+          <CircularProgress />
+        </LoaderWrapper>
+      ) : (
+        <>
+          <HeaderActions />
+          <PageLayout>
+            <LeftSideProfileSection />
+            <LeftPanelSide
+              // isDraftSlide={isDraftslide}
+              // setIsDraftSlide={setIsDraftSlide}
+            />
+            <RightPanelSide
+              // isDraftSlide={isDraftslide}
+              // setIsDraftSlide={setIsDraftSlide}
+            // currentSlides={currentSlides}
+            // setCurrentSlides={setCurrentSlides}
+            // slides={slides}
+            // setSlides={setSlides}
+            />
+          </PageLayout>
+        </>
+      )}
     </Wrapper>
   );
 };
@@ -82,4 +99,10 @@ const PageLayout = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
   }
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;

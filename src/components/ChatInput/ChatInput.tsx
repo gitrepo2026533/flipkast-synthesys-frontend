@@ -1,8 +1,7 @@
 /* eslint-disable prettier/prettier */
 import React, { useRef, useState } from "react";
 import styled from "styled-components";
-    
-import { AttachmentIcon } from "../Icons/AttachmentIcon";   
+import { AttachmentIcon } from "../Icons/AttachmentIcon";
 import { ArrowUpIcon } from "../Icons/ArrowUpIcon";
 import InputChip from "../Chip/inputChip";
 
@@ -79,15 +78,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
         if (!e.target.files || !setAttachedFiles) return;
-
         const filesArray = Array.from(e.target.files);
-
         setAttachedFiles((prev) => [...prev, ...filesArray]);
     };
 
     const removeAttachedFile = (index: number) => {
         if (!setAttachedFiles) return;
-
         setAttachedFiles((prev) =>
             prev.filter((_, i) => i !== index)
         );
@@ -237,19 +233,13 @@ const PromptWrapper = styled.div`
   background: ${({ theme }) => theme.editor};
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   border-radius: 16px;
-
   padding: 10px 10px 8px;
-
   display: flex;
   flex-direction: column;
   gap: 8px;
-
   box-shadow: ${({ theme }) => theme.editorShadow};
-
   transition: border-color 0.2s ease;
-
   &:focus-within {
     border-color: ${({ theme }) => theme.activeMenu};
   }
@@ -260,43 +250,27 @@ const PromptTextarea = styled.textarea<{
     $maxHeight: string;
 }>`
   width: 100%;
-
   min-height: ${({ $minHeight }) => $minHeight};
-
   max-height: ${({ $maxHeight }) => $maxHeight};
-
   background: transparent;
-
   border: none;
-
   outline: none;
-
   resize: none;
-
   overflow-y: auto;
-
   color: ${({ theme }) => theme.primaryText};
-
   font-family: "Montserrat", sans-serif;
-
   font-size: 15px;
-
   line-height: 1.6;
-
   padding: 0;
-
   &::placeholder {
     color: ${({ theme }) => theme.editorFileUpload};
   }
-
   &::-webkit-scrollbar {
     width: 4px;
   }
-
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) =>
         theme.editorLineBorder};
-
     border-radius: 999px;
   }
 `;
@@ -321,78 +295,51 @@ const AttachmentWrapper = styled.div`
 const AttachmentButton = styled.button`
   width: 34px;
   height: 34px;
-
   border-radius: 12px;
-
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   background: ${({ theme }) =>
         theme.editorDropDownContent};
-
   color: ${({ theme }) => theme.editorFileUpload};
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
-
   transition: all 0.2s ease;
-
   svg {
     width: 16px;
     height: 16px;
   }
-
   &:hover {
     background: ${({ theme }) =>
         theme.menuListItemActive};
-
     color: ${({ theme }) => theme.primaryText};
-
     transform: translateY(-1px);
   }
 `;
 
 const AttachmentMenu = styled.div`
   position: absolute;
-
   bottom: 40px;
-
   left: 0;
-
   min-width: 160px;
-
   background: ${({ theme }) => theme.editor};
-
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   border-radius: 12px;
-
   overflow: hidden;
-
   z-index: 20;
 `;
 
 const AttachmentMenuItem = styled.button`
   width: 100%;
-
   padding: 10px 12px;
-
   border: none;
-
   background: transparent;
-
   text-align: left;
-
   cursor: pointer;
-
   color: ${({ theme }) => theme.primaryText};
-
   font-size: 12px;
-
   &:hover {
     background: ${({ theme }) =>
         theme.editorDropDownContent};
@@ -402,7 +349,6 @@ const AttachmentMenuItem = styled.button`
 const Divider = styled.div`
   width: 1px;
   height: 16px;
-
   background: ${({ theme }) => theme.editorLineBorder};
 `;
 
@@ -411,115 +357,30 @@ const SendButton = styled.button<{
 }>`
   width: 38px;
   height: 38px;
-
   min-width: 38px;
-
   border-radius: 50%;
-
   border: none;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: ${({ $active }) =>
         $active ? "pointer" : "default"};
-
   background: ${({ theme, $active }) =>
         $active
             ? theme.button
             : theme.editorDropDownContent};
-
   box-shadow: ${({ theme, $active }) =>
         $active ? theme.buttonShadow : "none"};
-
   transition: all 0.2s ease;
 
   svg {
     width: 16px;
     height: 16px;
-
     fill: ${({ theme, $active }) =>
-        $active ? "#fff" : theme.editorFileUpload};
-  }
-
+        $active ? theme.white : theme.editorFileUpload};  }
   &:hover {
     transform: ${({ $active }) =>
         $active ? "scale(1.06)" : "none"};
-  }
-`;
-
-const AttachedFilesContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-`;
-
-const AttachedFileCard = styled.div`
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  padding: 8px 10px;
-
-  border-radius: 10px;
-
-  background: ${({ theme }) =>
-        theme.editorDropDownContent};
-
-  border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
-`;
-
-const FileInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  overflow: hidden;
-`;
-
-const FileName = styled.span`
-  font-size: 12px;
-
-  color: ${({ theme }) => theme.primaryText};
-
-  white-space: nowrap;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  max-width: 180px;
-`;
-
-const FileSize = styled.span`
-  font-size: 10px;
-
-  color: ${({ theme }) => theme.editorFileUpload};
-`;
-
-const RemoveFileButton = styled.button`
-  width: 22px;
-  height: 22px;
-
-  border-radius: 50%;
-
-  border: none;
-
-  background: transparent;
-
-  cursor: pointer;
-
-  color: ${({ theme }) => theme.editorFileUpload};
-
-  &:hover {
-    background: ${({ theme }) => theme.editorLineBorder};
-
-    color: ${({ theme }) => theme.primaryText};
   }
 `;
 
@@ -529,27 +390,17 @@ const ModelWrapper = styled.div`
 
 const ModelButton = styled.button`
   height: 28px;
-
   padding: 0 12px;
-
   border-radius: 8px;
-
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   background: ${({ theme }) =>
         theme.editorDropDownContent};
-
   color: ${({ theme }) => theme.primaryText};
-
   font-size: 12px;
-
   font-family: "Montserrat", sans-serif;
-
   cursor: pointer;
-
   transition: all 0.2s ease;
-
   &:hover {
     border-color: ${({ theme }) => theme.activeMenu};
   }
@@ -557,24 +408,15 @@ const ModelButton = styled.button`
 
 const ModelMenu = styled.div`
   position: absolute;
-
   bottom: 40px;
-
   left: 0;
-
   min-width: 180px;
-
   background: ${({ theme }) => theme.editor};
-
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   border-radius: 12px;
-
   overflow: hidden;
-
   z-index: 50;
-
   box-shadow: ${({ theme }) =>
         theme.editorMenuShadow};
 `;
@@ -583,26 +425,18 @@ const ModelMenuItem = styled.button<{
     $active?: boolean;
 }>`
   width: 100%;
-
   padding: 10px 12px;
-
   border: none;
-
   background: ${({ theme, $active }) =>
         $active
             ? theme.menuListItemActive
             : "transparent"};
 
   color: ${({ theme }) => theme.primaryText};
-
   text-align: left;
-
   font-size: 12px;
-
   cursor: pointer;
-
   transition: all 0.15s ease;
-
   &:hover {
     background: ${({ theme }) =>
         theme.menuListItemActive};
@@ -611,9 +445,7 @@ const ModelMenuItem = styled.button<{
 
 const RightActions = styled.div`
   display: flex;
-
   align-items: center;
-
   gap: 8px;
 `;
 
@@ -621,11 +453,8 @@ const PreviewImagesWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-
   overflow-x: auto;
-
   padding-bottom: 4px;
-
   &::-webkit-scrollbar {
     height: 4px;
   }
@@ -633,7 +462,6 @@ const PreviewImagesWrapper = styled.div`
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) =>
         theme.editorLineBorder};
-
     border-radius: 999px;
   }
 `;
@@ -641,73 +469,50 @@ const PreviewImagesWrapper = styled.div`
 const PreviewCard = styled.div`
   width: 84px;
   height: 84px;
-
   min-width: 84px;
-
   border-radius: 16px;
-
   overflow: hidden;
-
   position: relative;
-
   background: ${({ theme }) =>
         theme.editorDropDownContent};
-
   border: 1px solid
     ${({ theme }) => theme.editorLineBorder};
-
   box-shadow: ${({ theme }) => theme.cardShadow};
 `;
 
 const PreviewImage = styled.img`
   width: 100%;
   height: 100%;
-
   object-fit: cover;
 `;
 
 const FilePreview = styled.div`
   width: 100%;
   height: 100%;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   font-size: 28px;
-
   color: ${({ theme }) => theme.primaryText};
 `;
 
 const RemovePreviewButton = styled.button`
   position: absolute;
-
   top: 6px;
   right: 6px;
-
   width: 22px;
   height: 22px;
-
   border-radius: 50%;
-
   border: none;
-
-  background: rgba(0, 0, 0, 0.6);
-
-  color: white;
-
+  background: ${({ theme }) => theme.overlayBackground};
+  color: ${({ theme }) => theme.white};
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
-
   font-size: 11px;
-
   backdrop-filter: blur(10px);
-
   transition: 0.2s ease;
-
   &:hover {
     transform: scale(1.08);
   }

@@ -28,16 +28,27 @@ export interface Paragraphs {
   actorsList?: IActor[];
 }
 
+export interface Slide {
+  slideId: number;
+  projectId: number;
+  order: number;
+  projectParagraphs?: Paragraphs[];
+  audioPath?: string;
+  backGroundColor?: string;
+}
+
 export interface Project {
   projectId?: number;
   projectTypeId: number;
   useId?: number;
   title: string;
+  output?: string;
   coverImage?: string;
   insertDateTime?: string;
   updateDateTime?: string;
   subTitle?: string;
   paragraphs: Paragraphs[];
+  slides?: Slide[];
 }
 
 export interface ProjectList {

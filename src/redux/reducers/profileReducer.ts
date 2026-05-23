@@ -48,8 +48,6 @@ const profileReducer = (state = profileInitialState, action: any) => {
       return { ...state, [module]: { ...state[module as ProfileModules], isLoading } };
     }
     case `${GET_MY_PROFILE_SERVER}_SUCCESS`: {
-      console.log("action.payload.data.data: ", action.payload.data.data);
-
       return {
         ...state,
         [ProfileModules.myProfile]: {

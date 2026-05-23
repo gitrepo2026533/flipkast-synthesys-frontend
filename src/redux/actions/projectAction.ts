@@ -10,10 +10,19 @@ export const PLAY_AUDIO = "PLAY_AUDIO";
 export const DELETE_PROJECT_SERVER = "DELETE_PROJECT_SERVER";
 export const UPDATE_HAS_MORE_PROJECTS = "UPDATE_HAS_MORE_PROJECTS";
 export const SET_PAGE_PROJECTS = "SET_PAGE_PROJECTS";
+export const CREATE_VIDEO_PROJECT = "CREATE_VIDEO_PROJECT";
+// video project actions
 export const CREATE_VIDEO_PROJECT_SERVER = "CREATE_VIDEO_PROJECT_SERVER";
 export const GET_VIDEO_PROJECT_SERVER = "GET_VIDEO_PROJECT_SERVER";
-export const CREATE_VIDEO_PROJECT = "CREATE_VIDEO_PROJECT";
-
+export const GET_PROJECT_SLIDE_SERVER = "GET_PROJECT_SLIDE_SERVER";
+export const GET_VIDEO_BY_PROJECT_ID_SERVER = "GET_VIDEO_BY_PROJECT_ID_SERVER";
+export const UPDATE_VIDEO_PROJECT_SERVER = "UPDATE_VIDEO_PROJECT_SERVER";
+export const RESET_CREATED_PROJECT = "RESET_CREATED_PROJECT";
+export const GET_PREVIEW_PROJECT_SERVER = "GET_PREVIEW_PROJECT_SERVER";
+export const LOCK_VIDEO_PROJECT_SERVER = "LOCK_VIDEO_PROJECT_SERVER";
+export const MERGE_VIDEOS_PROJECT_SERVER = "MERGE_VIDEOS_PROJECT_SERVER";
+export const SET_ACTIVE_DRAFT_SLIDE = "DRAFT_SLIDE";
+export const CLEAR_ACTIVE_DRAFT_SLIDE = "CLEAR_DRAFT_SLIDE";
 interface UpdateProjectLoadingProps {
   module: ProjectModules;
   isLoading: boolean;
@@ -44,13 +53,19 @@ interface createVideoProjectServerProps {
 }
 
 interface GetVideoProjectServerProps {
-  pageNumber?: number;
-  pageSize?: number;
+  pageNumber: number;
+  pageSize: number;
   keyword?: string;
   projectTypeId?: number;
   status?: number | null;
-  sortWith?: string;
+  sortWith?: string | null;
   sortByDesc?: boolean;
+}
+
+interface lockVideoProjectServerProps {
+  projectId: number;
+  slideId: number;
+  ParagraphId: number;
 }
 
 export enum ProjectType {
@@ -63,6 +78,25 @@ export enum ProjectType {
 
 interface DeleteProjectProps {
   projectId: string;
+}
+export interface updateVideoProjectPayload {
+  title?: string;
+  slides?: {
+    slideId: number;
+    order: number;
+    slideBackgroundColor?: string;
+
+    projectParagraphs?: {
+      projectParagraphId: number;
+      order?: number;
+      actorId?: number;
+      text: string;
+    }[];
+  }[];
+  status?: number;
+  projectId: number;
+  slideId?: number;
+  projectParagraphId?: number;
 }
 
 export const updateHasMoreProjects = ({ hasMore }: UpdateHasMoreProjectsProps) => ({
@@ -168,6 +202,7 @@ export const playAudio = () => ({
   type: PLAY_AUDIO,
 });
 
+// video project actions
 export const createVideoProjectServer = ({ prompt }: createVideoProjectServerProps) => ({
   type: CREATE_VIDEO_PROJECT_SERVER,
   payload: {
@@ -212,21 +247,87 @@ export const getVideoProjectServer = ({
         pageNumber: pageNumber || 1,
         pageSize: pageSize || 10,
         keyword: keyword || "",
-        projectTypeId: projectTypeId || 2,
+        projectTypeId: projectTypeId || 0,
         status: status || null,
-        sortWith: sortWith || "updateDateTime",
+        sortWith: sortWith,
         sortByDesc: sortByDesc || true,
       },
     },
   },
 });
 
-// export const getVideoProjectServer = (projectId: number, SlideId: number) => ({
-//   type: GET_VIDEO_PROJECT_SERVER,
-//   payload: {
-//     request: {
-//       method: "GET",
-//       url: `/project/get?id=${projectId}&SlideId=${SlideId}`,
-//     },
-//   },
-// });
+export const getVideoByProjectIdServer = (projectId: number) => ({
+  type: GET_VIDEO_BY_PROJECT_ID_SERVER,
+  payload: {
+    request: {
+      method: "GET",
+      url: `/project/get?id=${projectId}`,
+    },
+  },
+});
+
+export const getProjectSlideServer = (projectId: number, slideId?: number) => ({
+  type: GET_PROJECT_SLIDE_SERVER,
+  payload: {
+    request: {
+      method: "GET",
+      url: `/Project/get?id=${projectId}&SlideId=${slideId}`,
+    },
+  },
+});
+
+export const resetCreatedProject = () => ({
+  type: RESET_CREATED_PROJECT,
+});
+
+export const updateVideoProjectServer = (data: updateVideoProjectPayload) => ({
+  type: UPDATE_VIDEO_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: `/project/update`,
+      data,
+    },
+  },
+});
+
+export const getPreviewProjectServer = (projectId: number) => ({
+  type: GET_PREVIEW_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "GET",
+      url: `/Project/preview?projectId=${projectId}`,
+    },
+  },
+});
+
+export const lockVideoProjectServer = ({ projectId, slideId, ParagraphId }: lockVideoProjectServerProps) => ({
+  type: LOCK_VIDEO_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "GET",
+      url: `/Project/lockVideo?projectId=${projectId}&slideId=${slideId}&ParagraphId=${ParagraphId}`,
+    },
+  },
+});
+
+export const mergeVideosProjectServer = (projectId: number) => ({
+  type: MERGE_VIDEOS_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: `/Actor/MergeVideos?projectId=${projectId}`,
+    },
+  },
+});
+
+export const setActiveDraftSlide = (slide: any) => ({
+  type: SET_ACTIVE_DRAFT_SLIDE,
+  payload: {
+    slide,
+  },
+});
+
+export const clearActiveDraftSlide = () => ({
+  type: CLEAR_ACTIVE_DRAFT_SLIDE,
+});

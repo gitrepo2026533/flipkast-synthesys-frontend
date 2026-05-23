@@ -4,28 +4,13 @@ import ChatInput from "../../../components/ChatInput/ChatInput";
 import { useEffect, useRef, useState } from "react";
 import { chips, models } from "../data";
 import { useParams } from "react-router-dom";
-
-const SettingsIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-    <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.4" />
-    <path
-      d="M7.5 1.5V3M7.5 12V13.5M1.5 7.5H3M12 7.5H13.5M3.4 3.4L4.5 4.5M10.5 10.5L11.6 11.6M3.4 11.6L4.5 10.5M10.5 4.5L11.6 3.4"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-    />
-  </svg>
-);
+import { updateVideoProjectServer, getProjectSlideServer, lockVideoProjectServer } from "../../../redux/actions/projectAction";
+import { useDispatch, useSelector } from "react-redux";
+import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
 
 const CloseIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
     <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M3 1.5L12.5 7L3 12.5V1.5Z" fill="currentColor" />
   </svg>
 );
 
@@ -48,20 +33,6 @@ const AiAvatarIcon = () => (
     </defs>
   </svg>
 );
-
-// Chevron icon for toggle
-const ChevronRightIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <path d="M5 3L8.5 6.5L5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ChevronLeftIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <path d="M8 3L4.5 6.5L8 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 // Image expand icon
 const ExpandIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -76,82 +47,88 @@ const ExpandIcon = () => (
 );
 
 interface Paragraph {
+  projectParagraphId: number;
   text: string;
-  Videopath: string;
-  imagePaths?: string[]; // ← NEW: optional images attached to prompt
+  outputAudio: string;
+  imagePaths?: string[];
 }
 
-const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelectedVideo }: any) => {
+const LeftPanelSide = () => {
   const { projectId } = useParams();
   const [prompt, setPrompt] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [selectedModel, setSelectedModel] = useState(models[0]);
-  const [lockedVideoIndex, setLockedVideoIndex] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [extraParagraphs, setExtraParagraphs] = useState<Paragraph[]>([]);
   const [videoSectionVisible, setVideoSectionVisible] = useState(true);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [showLockModal, setShowLockModal] = useState(false);
   const [pendingVideo, setPendingVideo] = useState<any>(null);
+  const dispatch = useDispatch();
+  const projectData = useSelector(getProject);
+  const [slideData, setSlideData] = useState<any>({});
+  const isDraftSlide = useSelector(getIsDraftSlide);
+  const draftSlideData = useSelector(getDraftSlideData);
 
-  const paragraphs: Paragraph[] = [...(currentSlides?.projectParagraphs ?? []), ...extraParagraphs];
+  const paragraphs: Paragraph[] = slideData?.projectParagraphs;
 
   useEffect(() => {
-    setLockedVideoIndex(currentSlides?.projectParagraphs?.length - 1);
-  }, [currentSlides?.slideId]);
+    if (isDraftSlide && draftSlideData?.slideId === 0) {
+      setSlideData(draftSlideData);
+      return;
+    }
+    if (projectData?.slides?.length) {
+      setSlideData(projectData.slides[0]);
+    }
+  }, [projectData, draftSlideData, isDraftSlide]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [paragraphs, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!prompt.trim()) return;
-    console.log("Prompt:", prompt);
-    console.log("Files:", attachedFiles);
-    console.log("selectedModel:", selectedModel);
-    console.log("chips:", chips);
-    console.log("currebtSlidesId: ", currentSlides.slideId);
-    console.log("projectId: ", projectId);
-
     setAttachedFiles([]);
     setPrompt("");
     setSelectedModel(models[0]);
-
-    const userText = prompt.trim();
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setExtraParagraphs((prev) => [...prev, { text: userText, Videopath: "" }]);
-    }, 1500);
+    dispatch(
+      updateVideoProjectServer({
+        projectId: Number(projectId),
+        slides: [
+          {
+            slideId: slideData.slideId,
+            order: slideData.order,
+            slideBackgroundColor: slideData.slideBackgroundColor,
+            projectParagraphs: [
+              {
+                projectParagraphId: 0,
+                order: 1,
+                actorId: 12270,
+                text: prompt.trim(),
+              },
+            ],
+          },
+        ],
+      })
+    );
+    // dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId)));
   };
 
-  const handleVideoClick = (index: number) => {
-    // setActiveVideoIndex(index === lockedVideoIndex ? null : index);
-  };
+  const videoParagraphs = paragraphs?.filter((p) => p.outputAudio);
 
-  const handleLockVideo = (index: number, videoPath: string) => {
-    setLockedVideoIndex(index);
-    console.log("Locked Video Index:", index);
-    console.log("Locked Video Path:", videoPath);
-  };
-
-  const videoParagraphs = paragraphs.filter((p) => p.Videopath);
-
-  if (!currentSlides) return null;
+  if (!slideData) return null;
 
   const handleConfirmLock = () => {
     if (!pendingVideo) return;
-
-    handleVideoClick(pendingVideo.idx);
-
-    handleLockVideo(pendingVideo.idx, pendingVideo.path);
-  
-
-    setSelectedVideo(pendingVideo.path);
-
     setShowLockModal(false);
     setPendingVideo(null);
+    dispatch(lockVideoProjectServer({
+      projectId: Number(projectId),
+      slideId: Number(slideData.slideId),
+      ParagraphId: Number(slideData.projectParagraphs[pendingVideo.idx].projectParagraphId),
+    }));
+    dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId),
+    ));
   };
 
   const handleCancelLock = () => {
@@ -163,14 +140,8 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
     <LeftPanel>
       {/* ── Top Header ── */}
       <LeftHeader>
-        <HeaderTitle>{currentSlides.slideId}</HeaderTitle>
+        <HeaderTitle>{slideData.slideId}</HeaderTitle>
         <HeaderActions>
-          <ActionBtn title="Settings" onClick={onSettings}>
-            <SettingsIcon />
-          </ActionBtn>
-          <ActionBtn title="Close" onClick={onClose}>
-            <CloseIcon />
-          </ActionBtn>
         </HeaderActions>
       </LeftHeader>
 
@@ -183,75 +154,72 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
             </PanelHeader>
 
             <ChatMessages>
-              {paragraphs.length === 0 && (
+              {paragraphs?.length === 0 ? (
                 <EmptyState>No conversation yet. Type a prompt below to get started.</EmptyState>
+              ) : (
+                paragraphs?.map((para, idx) => (
+                  <ConversationPair key={`${slideData.id}-${idx}`}>
+                    {/* User bubble */}
+                    {para.text || (para.imagePaths && para.imagePaths.length > 0) ? (
+                      <MessageRow $role="user">
+                        <MessageBubble $role="user">
+                          {/* Attached images grid */}
+                          {para.imagePaths && para.imagePaths.length > 0 && (
+                            <ImageGrid $count={para.imagePaths.length}>
+                              {para.imagePaths.map((src, imgIdx) => (
+                                <ImageThumbWrapper key={imgIdx} onClick={() => setExpandedImage(src)}>
+                                  <ImageThumb src={src} alt={`attachment-${imgIdx + 1}`} />
+                                  <ImageOverlay>
+                                    <ExpandIcon />
+                                  </ImageOverlay>
+                                </ImageThumbWrapper>
+                              ))}
+                            </ImageGrid>
+                          )}
+                          {para.text ? <BubbleText>{para.text}</BubbleText> : null}
+                          <Timestamp>
+                            {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </Timestamp>
+                        </MessageBubble>
+                      </MessageRow>
+                    ) : null}
+                    {para.outputAudio ? (
+                      <MessageRow $role="ai">
+                        <MessageBubble $role="ai">
+                          <VideoContainer
+                            $active={
+                              para?.projectParagraphId === slideData?.projectParagraphId
+                            }
+                          >
+                            <video
+                              src={`http://192.168.1.80:7132/${para.outputAudio}`}
+                              controls
+                              autoPlay={false}
+                              preload="metadata"
+                            />
+                          </VideoContainer>
+
+                          <Timestamp>
+                            {new Date().toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </Timestamp>
+                        </MessageBubble>
+                      </MessageRow>
+                    ) : (
+                      <ErrorContainer>
+                        <ErrorTitle>
+                          ⚠️ AI Generation Failed
+                        </ErrorTitle>
+
+                        <ErrorMessage> Please retry again.
+                        </ErrorMessage>
+                      </ErrorContainer>
+                    )}
+                  </ConversationPair>
+                ))
               )}
-
-              {paragraphs.map((para, idx) => (
-                <ConversationPair key={`${currentSlides.id}-${idx}`}>
-                  {/* User bubble */}
-                  {para.text || (para.imagePaths && para.imagePaths.length > 0) ? (
-                    <MessageRow $role="user">
-                      <MessageBubble $role="user">
-                        {/* Attached images grid */}
-                        {para.imagePaths && para.imagePaths.length > 0 && (
-                          <ImageGrid $count={para.imagePaths.length}>
-                            {para.imagePaths.map((src, imgIdx) => (
-                              <ImageThumbWrapper key={imgIdx} onClick={() => setExpandedImage(src)}>
-                                <ImageThumb src={src} alt={`attachment-${imgIdx + 1}`} />
-                                <ImageOverlay>
-                                  <ExpandIcon />
-                                </ImageOverlay>
-                              </ImageThumbWrapper>
-                            ))}
-                          </ImageGrid>
-                        )}
-                        {para.text ? <BubbleText>{para.text}</BubbleText> : null}
-                        <Timestamp>
-                          {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </Timestamp>
-                      </MessageBubble>
-                    </MessageRow>
-                  ) : null}
-
-                  {/* AI bubble */}
-                  {/* {para.Videopath ? (
-                    <MessageRow $role="ai">
-                      <MessageBubble $role="ai">
-                        <LinkedVideoCard $active={lockedVideoIndex === idx} onClick={() => handleLockVideo(idx, para.Videopath)}>
-                          <LinkedVideoInfo>
-                            <LinkedVideoMeta>
-                              <StatusDot $status="done" />
-                              Ready · {para.Videopath.split("/").pop()}
-                            </LinkedVideoMeta>
-                          </LinkedVideoInfo>
-                        </LinkedVideoCard>
-
-                        <Timestamp>{new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Timestamp>
-                      </MessageBubble>
-                    </MessageRow>
-                  ) : null} */}
-                  {para.Videopath ? (
-                    <MessageRow $role="ai">
-                      <MessageBubble $role="ai">
-                        <VideoContainer
-                          $active={lockedVideoIndex === idx}
-                          onClick={() => handleLockVideo(idx, para.Videopath)}
-                        >
-                          <video src={para.Videopath} controls autoPlay={false} preload="metadata" />
-                        </VideoContainer>
-
-                        <Timestamp>
-                          {new Date().toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </Timestamp>
-                      </MessageBubble>
-                    </MessageRow>
-                  ) : null}
-                </ConversationPair>
-              ))}
 
               {isTyping && (
                 <MessageRow $role="ai">
@@ -277,15 +245,9 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
             <PanelHeader>
               <SectionLabel>
                 <VideoThumbIcon />
-                Videos ({videoParagraphs.length})
+                Videos ({videoParagraphs?.length})
               </SectionLabel>
               <VideoHeaderActions>
-                <ActionBtn
-                  title={videoSectionVisible ? "Hide Videos" : "Show Videos"}
-                  onClick={() => setVideoSectionVisible((v) => !v)}
-                >
-                  {videoSectionVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                </ActionBtn>
                 <ActionBtn title="Close Videos" onClick={() => setVideoSectionVisible(false)}>
                   <CloseIcon />
                 </ActionBtn>
@@ -293,41 +255,39 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
             </PanelHeader>
 
             <VideoList>
-              {videoParagraphs.length === 0 && <EmptyState>No videos yet.</EmptyState>}
+              {videoParagraphs?.length === 0 ? (
+                <EmptyState>No videos generated yet. Send a prompt to create videos.</EmptyState>
+              ) : (
+                paragraphs?.map((para, idx) => {
+                  return (
+                    <VideoCard
+                      key={`${slideData.id}-vid-${idx}`}
+                      $active={para?.projectParagraphId === slideData?.projectParagraphId}
+                      onClick={() => {
+                        setPendingVideo({
+                          idx,
+                          path: para.outputAudio,
+                        });
+                        setShowLockModal(true);
+                      }}
+                    >
+                      <VideoCardIcon>
+                        <VideoThumbIcon />
+                      </VideoCardIcon>
 
-              {paragraphs.map((para, idx) => {
-                if (!para.Videopath) return null;
-                return (
-                  <VideoCard
-                    key={`${currentSlides.id}-vid-${idx}`}
-                    $active={lockedVideoIndex === idx}
-                    onClick={() => {
-                      // handleVideoClick(idx);
-                      // handleLockVideo(idx, para.Videopath);
-                      // setSelectedVideo(para.Videopath);
-                      setPendingVideo({  
-                        idx,  
-                        path: para.Videopath,  
-                      });  
-  
-                      setShowLockModal(true);  
-                    }}  
-                  >  
-                    <VideoCardIcon>
-                      <VideoThumbIcon />
-                    </VideoCardIcon>
+                      <VideoCardInfo>
+                        <VideoCardTitle>Video {idx + 1}</VideoCardTitle>
+                        <VideoCardPrompt>{para.text}</VideoCardPrompt>
+                        <VideoCardMeta>
+                          {/* <StatusPill $status="done">Done</StatusPill>
+                          <VideoCardFileName>{para?.outputAudio ? para.outputAudio.split("/").pop() : null}</VideoCardFileName> */}
 
-                    <VideoCardInfo>
-                      <VideoCardTitle>Video {idx + 1}</VideoCardTitle>
-                      <VideoCardPrompt>{para.text}</VideoCardPrompt>
-                      <VideoCardMeta>
-                        <StatusPill $status="done">Done</StatusPill>
-                        <VideoCardFileName>{para.Videopath.split("/").pop()}</VideoCardFileName>
-                      </VideoCardMeta>
-                    </VideoCardInfo>
-                  </VideoCard>
-                );
-              })}
+                        </VideoCardMeta>
+                      </VideoCardInfo>
+                    </VideoCard>
+                  );
+                })
+              )}
             </VideoList>
           </VideoSection>
           {showLockModal && (
@@ -401,10 +361,6 @@ const fadeIn = keyframes`
   to   { opacity: 1; transform: scale(1); }
 `;
 
-const slideIn = keyframes`
-  from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0); }
-`;
 
 /* ─────────────────────────── Layout ─────────────────────────── */
 
@@ -936,8 +892,8 @@ const StatusPill = styled.span<{ $status: string }>`
     $status === "done"
       ? "rgba(49,223,202,0.15)"
       : $status === "generating"
-      ? "rgba(255,140,0,0.15)"
-      : "rgba(255,108,118,0.15)"};
+        ? "rgba(255,140,0,0.15)"
+        : "rgba(255,108,118,0.15)"};
   color: ${({ $status }) => ($status === "done" ? "#31DFCA" : $status === "generating" ? "#FF8C00" : "#FF6C76")};
 `;
 
@@ -1026,6 +982,46 @@ const ConfirmBtn = styled(ModalButton)`
 
   &:hover {
     transform: translateY(-1px);
+  }
+`;
+
+const ErrorContainer = styled.div`
+  padding: 12px;
+  border-radius: 12px;
+  background: #2a1f1f;
+  border: 1px solid #ff4d4f;
+  color: #ff6b6b;
+  min-width: 260px;
+`;
+
+const ErrorTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ErrorMessage = styled.div`
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+  line-height: 1.5;
+`;
+
+const RetryButton = styled.button`
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #ff4d4f;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    background: #ff7875;
   }
 `;
 

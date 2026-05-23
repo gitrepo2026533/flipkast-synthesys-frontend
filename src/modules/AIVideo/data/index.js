@@ -24,4 +24,4 @@ export const mockProjects = [
   },
 ];
 
-export const chips = [{ title: "Video", isActive: true }, { title: "Image" }];
+export const chips = [{ title: "Video", isActive: true }];

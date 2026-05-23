@@ -1,6 +1,9 @@
 /* eslint-disable prettier/prettier */
 import styled, { keyframes, css } from "styled-components";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { clearActiveDraftSlide, getProjectSlideServer, setActiveDraftSlide } from "../../../redux/actions/projectAction";
 
 /* ─────────────────────────── Icons ─────────────────────────── */
 
@@ -71,8 +74,6 @@ const ReplayIcon = () => (
   </svg>
 );
 
-/* ─────────────────────────── Helpers ─────────────────────────── */
-
 const formatTime = (s: number) => {
   if (isNaN(s)) return "0:00";
   const m = Math.floor(s / 60);
@@ -80,15 +81,10 @@ const formatTime = (s: number) => {
   return `${m}:${String(sec).padStart(2, "0")}`;
 };
 
-const isVideoUrl = (url: string) =>
-  url && (url.includes(".mp4") || url.includes(".webm") || url.includes(".ogg") || url.includes("video"));
-
-/* ─────────────────────────── Component ─────────────────────────── */
-
-const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, selectedVideo }: any) => {
+const RightPanelSide = () => {
+  const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
-
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -99,12 +95,15 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const projectData = useSelector(getProject);
+  const projectSlides = useSelector(getSlidesData);
+  const [slides, setSlides] = useState<any>([]);
+  const [slideData, setSlideData] = useState<any>({});
+  const [currentSlideId, setCurrentSlideId] = useState<number | null>(null);
 
-  const videoSrc =  selectedVideo || currentSlides?.audioPath || "";
-  const hasVideo = isVideoUrl(videoSrc);
-  const thumbnailSrc = currentSlides?.backgroundAsset?.path ?? "";
+  const videoSrc = slideData?.audioPath;
+  const thumbnailSrc = slideData?.backgroundAsset?.path ?? "https://picsum.photos/800/600";
 
-  /* ── Auto-hide controls ── */
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
@@ -113,27 +112,18 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
     }
   }, [isPlaying]);
 
-  useEffect(() => {
-    resetControlsTimer();
-    return () => {
-      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
-    };
-  }, [isPlaying, resetControlsTimer]);
+  const getSlideData = (
+    projectId: number,
+    slideId: number
+  ) => {
+    dispatch(
+      getProjectSlideServer(
+        projectId,
+        slideId
+      )
+    );
+  };
 
-  /* ── Reset on slide change ── */
-  useEffect(() => {
-    setIsPlaying(false);
-    setIsEnded(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setBuffered(0);
-    setShowControls(true);
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
-  }, [currentSlides?.slideId]);
-
-  /* ── Video event handlers ── */
   const handleTimeUpdate = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -152,15 +142,23 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
     setIsPlaying(false);
     setIsEnded(true);
     setShowControls(true);
+    const currentIndex = slides?.findIndex(
+      (slide: any) =>
+        slide.slideId === slideData?.slideId
+    );
+
+    const nextSlide = slides?.[currentIndex + 1];
+    if (nextSlide) {
+      setCurrentSlideId(nextSlide.slideId);
+    }
   };
 
   const handleWaiting = () => setIsLoading(true);
   const handleCanPlay = () => setIsLoading(false);
 
-  /* ── Controls ── */
   const togglePlay = () => {
     const v = videoRef.current;
-    if (!v || !hasVideo) return;
+    if (!v) return;
     if (isEnded) {
       v.currentTime = 0;
       setIsEnded(false);
@@ -207,158 +205,229 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
     if (v.requestFullscreen) v.requestFullscreen();
   };
 
-  /* ── Slides ── */
-  const totalSeconds = slides.reduce((acc: number, slide: any) => acc + (slide.totalDuration || 0), 0);
+  const totalSeconds = slides?.reduce((acc: number, slide: any) => acc + (slide.totalDuration || 0), 0) || 0;
   const totalFormatted = `${String(Math.floor(totalSeconds / 60)).padStart(2, "0")}:${String(
     totalSeconds % 60,
   ).padStart(2, "0")}`;
 
   const handleSlideChange = (slideId: number | string) => {
-    const slideData = slides.find((s: any) => s.slideId == slideId);
-    if (slideData) setCurrentSlides(slideData);
+    if (slideId === slideData?.slideId) return;
+    const slide = slides?.find((s: any) => s.slideId == slideId);
+    if (!slide) return;
+
+    // Draft slide
+    if (slide.slideId === 0) {
+      dispatch(setActiveDraftSlide(slide));
+      setSlideData(slide);
+      setCurrentSlideId(0);
+      return;
+    }
+    dispatch(clearActiveDraftSlide());
+    setCurrentSlideId(slide.slideId);
   };
 
   const handleAddSlide = () => {
     const newSlide = {
-      slideId: `temp-${Date.now()}`,
+      slideId: 0,
+      order: 1,
+      // slideBackgroundColor: "",
       isDraft: true,
       backgroundAsset: { path: "" },
       totalDuration: 0,
       projectParagraphs: [],
     };
     setSlides((prev: any) => [...prev, newSlide]);
-    setCurrentSlides(newSlide);
+    setCurrentSlideId(0);
+    setSlideData(newSlide);
+    dispatch(setActiveDraftSlide(newSlide));
+
   };
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  useEffect(() => {
-  if (videoRef.current && selectedVideo) {
-    videoRef.current.load();
 
-    videoRef.current
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-      })
-      .catch(() => {console.log("error")});
-  }
-}, [selectedVideo]);
+  useEffect(() => {
+    if (!projectData) return;
+    const selectedProject = projectData;
+    setSlideData(selectedProject?.slides?.[0] || {});
+    setCurrentSlideId(selectedProject?.slides?.[0]?.slideId || null);
+  }, [projectData]);
+
+  useEffect(() => {
+    if (projectSlides) {
+      setSlides(projectSlides);
+    }
+  }, [projectSlides]);
+
+  useEffect(() => {
+    if (currentSlideId === null || currentSlideId === undefined) return;
+
+    // Draft slide
+    if (currentSlideId === 0) return;
+
+    getSlideData(
+      Number(projectData?.projectId),
+      Number(currentSlideId)
+    );
+  }, [currentSlideId]);
+
+  useEffect(() => {
+    resetControlsTimer();
+    return () => {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    };
+  }, [isPlaying, resetControlsTimer]);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setIsEnded(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setBuffered(0);
+    setShowControls(true);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+    if (videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+    }
+  }, [slideData?.slideId]);
+
+  useEffect(() => {
+    if (videoRef.current && videoSrc) {
+      videoRef.current.load();
+
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => { console.log("error") });
+    }
+  }, [videoSrc]);
 
   return (
     <Wrapper>
-      {/* ── Header ── */}
       <RightHeader>
         <RightHeaderLeft>
           <StatusDot $active={isPlaying} />
           <RightTitle>Preview</RightTitle>
         </RightHeaderLeft>
-        {hasVideo && duration > 0 && <DurationBadge>{formatTime(duration)}</DurationBadge>}
+        {duration > 0 && <DurationBadge>{formatTime(duration)}</DurationBadge>}
       </RightHeader>
 
       {/* ── Video Player ── */}
       <Content>
-        <PlayerCard
-          onMouseMove={resetControlsTimer}
-          onMouseEnter={() => setShowControls(true)}
-          onMouseLeave={() => isPlaying && setShowControls(false)}
-        >
-          {/* Video element */}
-          {hasVideo ? (
-            <StyledVideo
-              ref={videoRef}
-              src={videoSrc}
-              poster={thumbnailSrc}
-              preload="metadata"
-              playsInline
-              muted={isMuted}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={handleEnded}
-              onWaiting={handleWaiting}
-              onCanPlay={handleCanPlay}
-              onClick={togglePlay}
-            />
-          ) : (
-            <FallbackThumb src={thumbnailSrc} alt="slide preview" />
-          )}
+        {!videoSrc ? (
+          <LockedOverlay>
+            {/* <FallbackThumb src={thumbnailSrc} alt="slide preview" /> */}
+            <LockMessage>This slide is locked. No video available.</LockMessage>
+          </LockedOverlay>
+        ) : (
+          <PlayerCard
+            onMouseMove={resetControlsTimer}
+            onMouseEnter={() => setShowControls(true)}
+            onMouseLeave={() => isPlaying && setShowControls(false)}
+          >
+            {/* Video element */}
+            {videoSrc ? (
+              <StyledVideo
+                ref={videoRef}
+                src={`http://192.168.1.80:7132${videoSrc}`}
+                poster={thumbnailSrc}
+                preload="metadata"
+                playsInline
+                muted={isMuted}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={handleEnded}
+                onWaiting={handleWaiting}
+                onCanPlay={handleCanPlay}
+                onClick={togglePlay}
+              />
+            ) : (
+              <FallbackThumb src={thumbnailSrc} alt="slide preview" />
+            )}
 
-          {/* Gradient overlays */}
-          <GradientTop />
-          <GradientBottom />
+            {/* Gradient overlays */}
+            <GradientTop />
+            <GradientBottom />
 
-          {/* Loading spinner */}
-          {isLoading && (
-            <SpinnerOverlay>
-              <Spinner />
-            </SpinnerOverlay>
-          )}
+            {/* Loading spinner */}
+            {isLoading && (
+              <SpinnerOverlay>
+                <Spinner />
+              </SpinnerOverlay>
+            )}
 
-          {/* Big center play/pause on click feedback */}
-          <CenterClickArea onClick={togglePlay} />
+            {/* Big center play/pause on click feedback */}
+            <CenterClickArea onClick={togglePlay} />
 
-          {/* Controls overlay */}
-          <ControlsOverlay $visible={showControls || !isPlaying}>
-            {/* Slide title */}
-            <SlideLabel>
-              Slide {slides?.findIndex((s: any) => s.slideId === currentSlides?.slideId) + 1}
-              {currentSlides?.customTexts?.[0]?.text && (
-                <SlideTitleText> — {currentSlides.customTexts[0].text}</SlideTitleText>
-              )}
-            </SlideLabel>
+            {/* Controls overlay */}
+            <ControlsOverlay $visible={showControls || !isPlaying}>
+              {/* Slide title */}
+              <SlideLabel>
+                {slideData?.customTexts?.[0]?.text && (
+                  <SlideTitleText> — {slideData.customTexts[0].text}</SlideTitleText>
+                )}
+              </SlideLabel>
 
-            {/* Center play/pause/replay */}
-            <CenterBtn onClick={togglePlay}>
-              {isEnded ? <ReplayIcon /> : isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </CenterBtn>
+              {/* Center play/pause/replay */}
+              <CenterBtn onClick={togglePlay}>
+                {isEnded ? <ReplayIcon /> : isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </CenterBtn>
 
-            {/* Bottom controls bar */}
-            <BottomBar>
-              {/* Progress bar */}
-              <ProgressTrack ref={progressRef} onClick={handleProgressClick}>
-                <ProgressBuffered style={{ width: `${buffered}%` }} />
-                <ProgressFill style={{ width: `${progressPct}%` }} />
-                <ProgressThumb style={{ left: `${progressPct}%` }} />
-              </ProgressTrack>
+              {/* Bottom controls bar */}
+              <BottomBar>
+                {/* Progress bar */}
+                <ProgressTrack ref={progressRef} onClick={handleProgressClick}>
+                  <ProgressBuffered style={{ width: `${buffered}%` }} />
+                  <ProgressFill style={{ width: `${progressPct}%` }} />
+                  <ProgressThumb style={{ left: `${progressPct}%` }} />
+                </ProgressTrack>
 
-              <ControlsRow>
-                <ControlsLeft>
-                  <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
-                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                  </CtrlBtn>
-
-                  <VolumeGroup>
-                    <CtrlBtn onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
-                      <VolumeIcon muted={isMuted} />
+                <ControlsRow>
+                  <ControlsLeft>
+                    <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
+                      {isPlaying ? <PauseIcon /> : <PlayIcon />}
                     </CtrlBtn>
-                    <VolumeSlider
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={isMuted ? 0 : volume}
-                      onChange={handleVolumeChange}
-                    />
-                  </VolumeGroup>
 
-                  <TimeLabel>
-                    {formatTime(currentTime)}
-                    <TimeSep>/</TimeSep>
-                    {formatTime(duration)}
-                  </TimeLabel>
-                </ControlsLeft>
+                    <VolumeGroup>
+                      <CtrlBtn onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
+                        <VolumeIcon muted={isMuted} />
+                      </CtrlBtn>
+                      <VolumeSlider
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                      />
+                    </VolumeGroup>
 
-                <ControlsRight>
-                  <CtrlBtn onClick={handleFullscreen} title="Fullscreen">
-                    <FullscreenIcon />
-                  </CtrlBtn>
-                </ControlsRight>
-              </ControlsRow>
-            </BottomBar>
-          </ControlsOverlay>
+                    <TimeLabel>
+                      {formatTime(currentTime)}
+                      <TimeSep>/</TimeSep>
+                      {formatTime(duration)}
+                    </TimeLabel>
+                  </ControlsLeft>
 
-          {/* Empty state */}
-          {!hasVideo && !thumbnailSrc && (
+                  <ControlsRight>
+                    <CtrlBtn onClick={handleFullscreen} title="Fullscreen">
+                      <FullscreenIcon />
+                    </CtrlBtn>
+                  </ControlsRight>
+                </ControlsRow>
+              </BottomBar>
+            </ControlsOverlay>
+
+            {/* Empty state */}
+            {/* {!videoSrc && !thumbnailSrc && (
             <EmptyPlayer>
               <EmptyIcon>
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -368,8 +437,9 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
               </EmptyIcon>
               <EmptyText>No video selected</EmptyText>
             </EmptyPlayer>
-          )}
-        </PlayerCard>
+          )} */}
+          </PlayerCard>
+        )}
       </Content>
 
       {/* ── Slides Strip ── */}
@@ -388,8 +458,8 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
 
         <SlidesTrack>
           {slides?.map((slide: any, idx: number) => {
-            const isActive = currentSlides?.slideId === slide.slideId;
-            const thumb = slide?.backgroundAsset?.path ?? "";
+            const isActive = slideData?.slideId === slide.slideId;
+            const thumb = slide?.backgroundAsset?.path ?? "https://picsum.photos/536/354";
             return (
               <SlideItem key={slide.slideId} $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>
                 <SlideThumbWrapper $active={isActive}>
@@ -433,7 +503,7 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
           })}
         </SlidesTrack>
       </SlidesSection>
-    </Wrapper>
+    </Wrapper >
   );
 };
 
@@ -1062,4 +1132,23 @@ const SlideMoreBtn = styled.button`
   &:active {
     transform: scale(0.94);
   }
+`;
+
+const LockedOverlay = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+`;
+
+const LockMessage = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
 `;

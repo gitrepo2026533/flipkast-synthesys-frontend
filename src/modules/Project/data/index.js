@@ -471,6 +471,6 @@ export const response = [
   },
 ];
 
-export const chips = [{ title: "Video", isActive: true }, { title: "Image" }];
+export const chips = [{ title: "Video", isActive: true }];
 
 export const models = ["GPT-4o", "GPT-4.1", "Claude 3", "Gemini Pro"];

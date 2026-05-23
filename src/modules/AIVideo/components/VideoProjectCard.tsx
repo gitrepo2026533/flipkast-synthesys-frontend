@@ -18,8 +18,8 @@ const VideoProjectCard = ({
     <CardWrapper onClick={onClick}>
       <CardImageWrapper>
         <CardImage src={image} alt={title} />
-        <ImageOverlay />
-        <CardBigTitle>{title}</CardBigTitle>
+        {/* <ImageOverlay /> */}
+        {/* <CardBigTitle>{title}</CardBigTitle> */}
       </CardImageWrapper>
       <CardContent>
         <CardTitle>{title}</CardTitle>
@@ -33,7 +33,7 @@ export default VideoProjectCard;
 
 const CardWrapper = styled.div`
   width: 100%;
-  max-width: 370px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;

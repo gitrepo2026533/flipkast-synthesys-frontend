@@ -14,6 +14,7 @@ import {
   CREATE_VIDEO_PROJECT_SERVER,
   createVideoProjectServer,
   GET_VIDEO_PROJECT_SERVER,
+  GET_VIDEO_BY_PROJECT_ID_SERVER,
 } from "../actions/projectAction";
 import { ProjectModules } from "../../types/project";
 import { Popups, updatePopup } from "../actions/popupsActions";
@@ -38,6 +39,10 @@ const projectSagas = [
   takeEvery(`${DELETE_PROJECT_SERVER}_SUCCESS`, handleDeleteProjectSuccess),
 
   takeEvery(`${GET_VIDEO_PROJECT_SERVER}_SUCCESS`, handleGetVideoProjectSuccess),
+
+  takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}`, handleGetVideoById),
+  takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}_FAIL`, handleGetVideoByIdFail),
+  takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}_SUCCESS`, handleGetVideoByIdSuccess),
 ];
 
 function* handleGetProjectListFail() {
@@ -110,14 +115,33 @@ function* handleGetVideoProjectSuccess() {
   yield put(updateProjectLoading({ module: ProjectModules.projectList, isLoading: false }));
 }
 
-// function* handleCreateVideoProjectSuccess(action: any): any {
-//   try {
-//     const projectId = action.payload.data.data.projectId;
+function* handleGetVideoById() {
+  yield put(
+    updateProjectLoading({
+      module: ProjectModules.project,
+      isLoading: true,
+    }),
+  );
+}
 
-//     yield put(push(`/ai-video/projects/${projectId}`));
-//   } catch (error) {
-//     console.log(error);
-//   }
-// }
+function* handleGetVideoByIdSuccess() {
+  yield put(
+    updateProjectLoading({
+      module: ProjectModules.project,
+      isLoading: false,
+    }),
+  );
+}
+
+function* handleGetVideoByIdFail() {
+  yield toast.error("Error while getting video project");
+
+  yield put(
+    updateProjectLoading({
+      module: ProjectModules.project,
+      isLoading: false,
+    }),
+  );
+}
 
 export default projectSagas;

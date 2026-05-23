@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ChatInput from "../../components/ChatInput/ChatInput";
 import VideoProjectCard from "./components/VideoProjectCard";
-import { models, mockProjects, chips } from "./data";
+import { models, chips } from "./data";
 import { useDispatch, useSelector } from "react-redux";
-import { createVideoProjectServer, getVideoProjectServer } from "../../redux/actions/projectAction";
-import { getProject, getProjectList } from "../../redux/reducers/projectReducer";
+import { createVideoProjectServer, getVideoProjectServer, resetCreatedProject } from "../../redux/actions/projectAction";
+import { getCreatedProject, getProjectList, getProjectListLoading, getTotalPages, getProjectListPageNumber, getHasMore } from "../../redux/reducers/projectReducer";
+import Textfield from "../../components/Textfield/Textfield";
+import { SearchIcon } from "../../components/Icons/SearchIcon";
 
 const AiVideo = () => {
 
@@ -27,30 +29,50 @@ const AiVideo = () => {
   const [sortWith, setSortWith] = useState("updateDateTime")
   const [sortByDesc, setSortByDesc] = useState(true)
   const videoProjects = useSelector(getProjectList)
-
-  useEffect(() => {
-    dispatch((getVideoProjectServer({
-      pageNumber, pageSize, keyword, projectTypeId, status, sortWith, sortByDesc
-    })))
-  }, [])
-
-  useEffect(() => {
-    console.log("videoProjects: ", videoProjects);
-  }, [videoProjects])
-
-
+  const createdProject = useSelector(getCreatedProject)
+  const projectListLoading = useSelector(getProjectListLoading)
+  const totalPages = useSelector(getTotalPages)
+  const hasMore = useSelector(getHasMore)
+  const [projectsData, setProjectsData] = useState<any[]>([]);
 
   const handleSend = () => {
-    // console.log("Prompt:", prompt);
-    // console.log("Files:", attachedFiles);
-    // console.log("selectedModel:", selectedModel);
-    // console.log("chips:", chips);
-    // debugger;
+    if (prompt.trim() === "") return;
     dispatch(createVideoProjectServer({
       prompt: prompt
     }))
-    // navigate(`/ai-video/projects/${}`)
   }
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const bottomReached = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+    if (bottomReached && !projectListLoading && pageNumber <= totalPages) {
+      setPageNumber((prev) => prev + 1);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+    setPageNumber(1);
+    setProjectsData([]);
+  };
+
+  useEffect(() => {
+    if (createdProject?.projectId) {
+      navigate(`/ai-video/projects/${createdProject?.projectId}`);
+      dispatch(resetCreatedProject());
+    }
+  }, [createdProject])
+
+  useEffect(() => {
+    dispatch(getVideoProjectServer({
+      pageNumber, pageSize, keyword, projectTypeId, status, sortWith, sortByDesc
+    }));
+  }, [pageNumber, keyword]);
+
+  useEffect(() => {
+    setProjectsData((prev: any) => [...prev, ...videoProjects]);
+  }, [videoProjects])
 
   return (
     <Wrapper>
@@ -82,14 +104,19 @@ const AiVideo = () => {
             <ProjectsSection>
               <ProjectsHeader>
                 <ProjectsLabel>My Projects</ProjectsLabel>
+                <Textfield
+                  value={keyword}
+                  placeholder="Search for voice actors, languages etc."
+                  startAdornment={<SearchIcon />}
+                  onChange={handleSearchChange}
+                />
               </ProjectsHeader>
-              <ProjectsGrid>
-                {videoProjects.map((project) => (
+              <ProjectsGrid onScroll={handleScroll}>
+                {projectsData.map((project) => (
                   <VideoProjectCard
                     key={project.projectId}
                     title={project.title}
-                    image={project.title}
-                    // description={project.description}
+                    image={ project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354" }
                     onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
                   />
                 ))}
@@ -202,19 +229,24 @@ const ProjectsLabel = styled.p`
 
 const ProjectsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  );
   gap: 20px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   padding-right: 4px;
   padding-bottom: 10px;
-  align-content: flex-start;
+  align-content: start;
+  width: 100%;
   &::-webkit-scrollbar {
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: ${({ theme }) =>
+    theme.editorLineBorder};
     border-radius: 999px;
   }
   &::-webkit-scrollbar-track {

@@ -2,28 +2,10 @@ import { useState } from "react";
 import styled from "styled-components";
 import { HomeIcon } from "../../../components/Icons/HomeIcon";
 import { useNavigate } from "react-router-dom";
-import { ProfileIcon } from "../../../components/Icons/ProfileIcon";
-
-interface TopBarProps {
-  title?: string;
-  credits?: number;
-  onMenuToggle?: () => void;
-  onTitleChange?: (title: string) => void;
-  onSaveProject?: () => void;
-  onPreview?: () => void;
-  onGenerate?: () => void;
-  projectData: any;
-}
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-const HamburgerIcon = () => (
-  <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-    <rect width="18" height="2" rx="1" fill="currentColor" />
-    <rect y="6" width="18" height="2" rx="1" fill="currentColor" />
-    <rect y="12" width="18" height="2" rx="1" fill="currentColor" />
-  </svg>
-);
+import { useDispatch, useSelector } from "react-redux";
+import { getProject } from "../../../redux/reducers/projectReducer";
+import { mergeVideosProjectServer, updateVideoProjectServer } from "../../../redux/actions/projectAction";
+import VideoModal from "./VideoModal";
 
 const PencilIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -70,94 +52,125 @@ const CheckIcon = () => (
   </svg>
 );
 
-const HeaderActions = ({
-  title = "Untitled session",
-  credits = 10,
-  onMenuToggle,
-  onTitleChange,
-  onSaveProject,
-  onPreview,
-  onGenerate,
-  projectData,
-}: TopBarProps) => {
+const HeaderActions = ({ credits }: any) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(title);
+  const [editValue, setEditValue] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const projectData = useSelector(getProject);
+  const dispatch = useDispatch();
 
   const handleTitleDoubleClick = () => setIsEditing(true);
 
-  const handleTitleBlur = () => {
-    setIsEditing(false);
-    onTitleChange?.(editValue);
-  };
-
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === "Escape") {
+      dispatch(
+        updateVideoProjectServer({
+          projectId: Number(projectData?.projectId),
+          title: editValue,
+          slides: [
+            {
+              slideId: Number(projectData?.slides?.[0]?.slideId),
+              order: 1,
+              slideBackgroundColor: "",
+              projectParagraphs: [],
+            },
+          ],
+          status: 1,
+        }),
+      );
+      // dispatch(getProjectSlideServer(Number(projectData?.projectId)));
       setIsEditing(false);
-      onTitleChange?.(editValue);
     }
+  };
+
+  const onSaveProject = () => {
+    console.log("Save project");
+  };
+
+  const onPreview = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const onGenerate = () => {
+    dispatch(mergeVideosProjectServer(Number(projectData?.projectId)));
   };
 
   const navigate = useNavigate();
 
   return (
-    <Bar>
-      {/* Left */}
-      <LeftSection>
-        <MenuButton onClick={() => navigate("/")} aria-label="Toggle menu">
-          {/* <HamburgerIcon /> */}
-          <HomeIcon />
-        </MenuButton>
-        <Divider />
-      </LeftSection>
+    <>
+      <Bar>
+        <LeftSection>
+          <MenuButton onClick={() => navigate("/")} aria-label="Toggle menu">
+            <HomeIcon />
+          </MenuButton>
+          <Divider />
+        </LeftSection>
 
-      {/* Center */}
-      <CenterSection>
-        {isEditing ? (
-          <TitleInput
-            autoFocus
-            value={projectData.title}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleTitleBlur}
-            onKeyDown={handleTitleKeyDown}
-          />
-        ) : (
-          <TitleGroup onDoubleClick={handleTitleDoubleClick}>
-            <TitleText>{projectData.title}</TitleText>
-            <EditButton onClick={() => setIsEditing(true)} aria-label="Edit title">
-              <PencilIcon />
-            </EditButton>
-          </TitleGroup>
-        )}
-      </CenterSection>
+        <CenterSection>
+          {isEditing ? (
+            <TitleInput
+              name="title"
+              autoFocus
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              // onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
+            />
+          ) : (
+            <TitleGroup onDoubleClick={handleTitleDoubleClick}>
+              <TitleText>{projectData?.title}</TitleText>
+              <EditButton
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditValue(projectData?.title || "");
+                }}
+                aria-label="Edit title"
+              >
+                <PencilIcon />
+              </EditButton>
+            </TitleGroup>
+          )}
+        </CenterSection>
 
-      {/* Right */}
-      <RightSection>
-        <SaveButton onClick={onSaveProject} aria-label="Save project">
-          <SaveIcon />
-          <span>Save Project</span>
-        </SaveButton>
+        <RightSection>
+          <SaveButton onClick={onSaveProject} aria-label="Save project">
+            <SaveIcon />
+            <span>Save Project</span>
+          </SaveButton>
 
-        <PreviewButton onClick={onPreview} aria-label="Preview">
-          <PlayIcon />
-          <span>Preview</span>
-        </PreviewButton>
+          <PreviewButton onClick={onPreview} aria-label="Preview">
+            <PlayIcon />
+            <span>Preview</span>
+          </PreviewButton>
 
-        <GenerateButton onClick={onGenerate} aria-label="Generate">
-          <CheckIcon />
-          <span>Generate</span>
-        </GenerateButton>
+          <GenerateButton onClick={onGenerate} aria-label="Generate">
+            <CheckIcon />
+            <span>Generate</span>
+          </GenerateButton>
 
-        <CreditsText>{credits} credits</CreditsText>
-      </RightSection>
-    </Bar>
+          <CreditsText>{credits ? credits : 0} credits</CreditsText>
+        </RightSection>
+      </Bar>
+
+      <VideoModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        videoSrc="http://192.168.1.80:7132/Videos/8356e72c-eb9e-44a2-87d6-af5270404503.mp4"
+        projectId={Number(projectData?.projectId)}
+      />
+    </>
   );
 };
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const Bar = styled.header`
   width: 100%;
   height: 48px;
+  min-height: 0;
   display: flex;
   align-items: center;
   flex-shrink: 0;
