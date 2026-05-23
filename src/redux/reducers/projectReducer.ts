@@ -5,6 +5,7 @@ import {
   CREATE_PROJECT_SERVER,
   CREATE_VIDEO_PROJECT_SERVER,
   DELETE_PROJECT_SERVER,
+  DELETE_PROJECT_SLIDE_SERVER,
   GET_PROJECT_LIST_SERVER,
   GET_PROJECT_SERVER,
   GET_VIDEO_PROJECT_SERVER,
@@ -252,7 +253,7 @@ const profileReducer = (state = projectInitialState, action: any) => {
     case `${CREATE_PROJECT_SERVER}_SUCCESS`:
     case `${GET_PROJECT_SERVER}_SUCCESS`: {
       console.log("action.payload.data.data: ", action.payload.data.data);
-      const { paragraphs, title, projectId } = action.payload.data.data;
+      const { paragraphs, title, projectId, slides } = action.payload.data.data;
       const paragraphsData = paragraphs.map(({ data, actorId, order, actor }: any) => ({
         data,
         actorId,
@@ -285,6 +286,22 @@ const profileReducer = (state = projectInitialState, action: any) => {
           pageNumber: 0,
           hasMore: true,
           isDeleteLoading: false,
+        },
+      };
+    }
+    case `${DELETE_PROJECT_SLIDE_SERVER}_SUCCESS`: {
+      const deletedSlideId = action.meta.previousAction.payload.request.data.slideId;
+
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          project: {
+            ...state[ProjectModules.project].project,
+            slides:
+              state[ProjectModules.project].project?.slides?.filter((slide: any) => slide.slideId !== deletedSlideId) ||
+              [],
+          },
         },
       };
     }

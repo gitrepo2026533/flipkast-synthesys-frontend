@@ -1,6 +1,9 @@
 /* eslint-disable prettier/prettier */
 import styled, { keyframes, css } from "styled-components";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { deleteProjectserver, deleteProjectSlideServer } from "../../../redux/actions/projectAction";
+import { getProject } from "../../../redux/reducers/projectReducer";
 
 /* ─────────────────────────── Icons ─────────────────────────── */
 
@@ -85,7 +88,7 @@ const isVideoUrl = (url: string) =>
 
 /* ─────────────────────────── Component ─────────────────────────── */
 
-const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, selectedVideo }: any) => {
+const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, selectedVideo, projectId }: any) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -99,10 +102,15 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
+  const [deleteSlideId, setDeleteSlideId] = useState<string | number | null>(null);
+  const [panelLoading, setPanelLoading] = useState(true);
 
-  const videoSrc =  selectedVideo || currentSlides?.audioPath || "";
+  const videoSrc = selectedVideo || currentSlides?.audioPath || "";
   const hasVideo = isVideoUrl(videoSrc);
   const thumbnailSrc = currentSlides?.backgroundAsset?.path ?? "";
+
+  const dispatch = useDispatch();
 
   /* ── Auto-hide controls ── */
   const resetControlsTimer = useCallback(() => {
@@ -233,17 +241,74 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   useEffect(() => {
-  if (videoRef.current && selectedVideo) {
-    videoRef.current.load();
+    if (videoRef.current && selectedVideo) {
+      videoRef.current.load();
 
-    videoRef.current
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-      })
-      .catch(() => {console.log("error")});
-  }
-}, [selectedVideo]);
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          console.log("error");
+        });
+    }
+  }, [selectedVideo]);
+
+  const handleDeleteSlide = (slideId: string | number) => {
+    if (!projectId) return;
+
+    dispatch(
+      deleteProjectSlideServer({
+        projectId: Number(projectId),
+        slideId,
+      }),
+    );
+    const updatedSlides = slides.filter((s: any) => s.slideId !== slideId);
+
+    setSlides(updatedSlides);
+
+    // if deleted slide was active
+    if (currentSlides?.slideId === slideId) {
+      setCurrentSlides(updatedSlides[0] || null);
+    }
+
+    setOpenMenuId(null);
+  };
+
+  const confirmDeleteSlide = () => {
+    if (deleteSlideId === null) return;
+
+    handleDeleteSlide(deleteSlideId);
+    setDeleteSlideId(null);
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // if clicked outside menu + button
+      if (!target.closest("[data-menu-wrapper]")) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    setPanelLoading(true);
+
+    const timer = setTimeout(() => {
+      setPanelLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentSlides]);
 
   return (
     <Wrapper>
@@ -256,109 +321,115 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
         {hasVideo && duration > 0 && <DurationBadge>{formatTime(duration)}</DurationBadge>}
       </RightHeader>
 
-      {/* ── Video Player ── */}
-      <Content>
-        <PlayerCard
-          onMouseMove={resetControlsTimer}
-          onMouseEnter={() => setShowControls(true)}
-          onMouseLeave={() => isPlaying && setShowControls(false)}
-        >
-          {/* Video element */}
-          {hasVideo ? (
-            <StyledVideo
-              ref={videoRef}
-              src={videoSrc}
-              poster={thumbnailSrc}
-              preload="metadata"
-              playsInline
-              muted={isMuted}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={handleEnded}
-              onWaiting={handleWaiting}
-              onCanPlay={handleCanPlay}
-              onClick={togglePlay}
-            />
-          ) : (
-            <FallbackThumb src={thumbnailSrc} alt="slide preview" />
-          )}
-
-          {/* Gradient overlays */}
-          <GradientTop />
-          <GradientBottom />
-
-          {/* Loading spinner */}
-          {isLoading && (
-            <SpinnerOverlay>
-              <Spinner />
-            </SpinnerOverlay>
-          )}
-
-          {/* Big center play/pause on click feedback */}
-          <CenterClickArea onClick={togglePlay} />
-
-          {/* Controls overlay */}
-          <ControlsOverlay $visible={showControls || !isPlaying}>
-            {/* Slide title */}
-            <SlideLabel>
-              Slide {slides?.findIndex((s: any) => s.slideId === currentSlides?.slideId) + 1}
-              {currentSlides?.customTexts?.[0]?.text && (
-                <SlideTitleText> — {currentSlides.customTexts[0].text}</SlideTitleText>
+      {panelLoading ? (
+        <PanelLoaderWrapper>
+          <PanelSpinner />
+        </PanelLoaderWrapper>
+      ) : (
+        <>
+          {/* ── Video Player ── */}
+          <Content>
+            <PlayerCard
+              onMouseMove={resetControlsTimer}
+              onMouseEnter={() => setShowControls(true)}
+              onMouseLeave={() => isPlaying && setShowControls(false)}
+            >
+              {/* Video element */}
+              {hasVideo ? (
+                <StyledVideo
+                  ref={videoRef}
+                  src={videoSrc}
+                  poster={thumbnailSrc}
+                  preload="metadata"
+                  playsInline
+                  muted={isMuted}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={handleEnded}
+                  onWaiting={handleWaiting}
+                  onCanPlay={handleCanPlay}
+                  onClick={togglePlay}
+                />
+              ) : (
+                <FallbackThumb src={thumbnailSrc} alt="slide preview" />
               )}
-            </SlideLabel>
 
-            {/* Center play/pause/replay */}
-            <CenterBtn onClick={togglePlay}>
-              {isEnded ? <ReplayIcon /> : isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </CenterBtn>
+              {/* Gradient overlays */}
+              <GradientTop />
+              <GradientBottom />
 
-            {/* Bottom controls bar */}
-            <BottomBar>
-              {/* Progress bar */}
-              <ProgressTrack ref={progressRef} onClick={handleProgressClick}>
-                <ProgressBuffered style={{ width: `${buffered}%` }} />
-                <ProgressFill style={{ width: `${progressPct}%` }} />
-                <ProgressThumb style={{ left: `${progressPct}%` }} />
-              </ProgressTrack>
+              {/* Loading spinner */}
+              {isLoading && (
+                <SpinnerOverlay>
+                  <Spinner />
+                </SpinnerOverlay>
+              )}
 
-              <ControlsRow>
-                <ControlsLeft>
-                  <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
-                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                  </CtrlBtn>
+              {/* Big center play/pause on click feedback */}
+              <CenterClickArea onClick={togglePlay} />
 
-                  <VolumeGroup>
-                    <CtrlBtn onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
-                      <VolumeIcon muted={isMuted} />
-                    </CtrlBtn>
-                    <VolumeSlider
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={isMuted ? 0 : volume}
-                      onChange={handleVolumeChange}
-                    />
-                  </VolumeGroup>
+              {/* Controls overlay */}
+              <ControlsOverlay $visible={showControls || !isPlaying}>
+                {/* Slide title */}
+                <SlideLabel>
+                  Slide {slides?.findIndex((s: any) => s.slideId === currentSlides?.slideId) + 1}
+                  {currentSlides?.customTexts?.[0]?.text && (
+                    <SlideTitleText> — {currentSlides.customTexts[0].text}</SlideTitleText>
+                  )}
+                </SlideLabel>
 
-                  <TimeLabel>
-                    {formatTime(currentTime)}
-                    <TimeSep>/</TimeSep>
-                    {formatTime(duration)}
-                  </TimeLabel>
-                </ControlsLeft>
+                {/* Center play/pause/replay */}
+                <CenterBtn onClick={togglePlay}>
+                  {isEnded ? <ReplayIcon /> : isPlaying ? <PauseIcon /> : <PlayIcon />}
+                </CenterBtn>
 
-                <ControlsRight>
-                  <CtrlBtn onClick={handleFullscreen} title="Fullscreen">
-                    <FullscreenIcon />
-                  </CtrlBtn>
-                </ControlsRight>
-              </ControlsRow>
-            </BottomBar>
-          </ControlsOverlay>
+                {/* Bottom controls bar */}
+                <BottomBar>
+                  {/* Progress bar */}
+                  <ProgressTrack ref={progressRef} onClick={handleProgressClick}>
+                    <ProgressBuffered style={{ width: `${buffered}%` }} />
+                    <ProgressFill style={{ width: `${progressPct}%` }} />
+                    <ProgressThumb style={{ left: `${progressPct}%` }} />
+                  </ProgressTrack>
 
-          {/* Empty state */}
-          {!hasVideo && !thumbnailSrc && (
+                  <ControlsRow>
+                    <ControlsLeft>
+                      <CtrlBtn onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
+                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                      </CtrlBtn>
+
+                      <VolumeGroup>
+                        <CtrlBtn onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
+                          <VolumeIcon muted={isMuted} />
+                        </CtrlBtn>
+                        <VolumeSlider
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                        />
+                      </VolumeGroup>
+
+                      <TimeLabel>
+                        {formatTime(currentTime)}
+                        <TimeSep>/</TimeSep>
+                        {formatTime(duration)}
+                      </TimeLabel>
+                    </ControlsLeft>
+
+                    <ControlsRight>
+                      <CtrlBtn onClick={handleFullscreen} title="Fullscreen">
+                        <FullscreenIcon />
+                      </CtrlBtn>
+                    </ControlsRight>
+                  </ControlsRow>
+                </BottomBar>
+              </ControlsOverlay>
+
+              {/* Empty state */}
+              {/* {!hasVideo && !thumbnailSrc && (
             <EmptyPlayer>
               <EmptyIcon>
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -368,9 +439,11 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
               </EmptyIcon>
               <EmptyText>No video selected</EmptyText>
             </EmptyPlayer>
-          )}
-        </PlayerCard>
-      </Content>
+          )} */}
+            </PlayerCard>
+          </Content>
+        </>
+      )}
 
       {/* ── Slides Strip ── */}
       <SlidesSection>
@@ -381,58 +454,113 @@ const RightPanelSide = ({ currentSlides, slides, setCurrentSlides, setSlides, se
           <SlideCount>
             {slides?.length ?? 0} slide{slides?.length !== 1 ? "s" : ""}
           </SlideCount>
-          <AddSlideBtn title="Add slide" onClick={handleAddSlide}>
-            <AddIcon />
-          </AddSlideBtn>
         </SlidesMeta>
 
         <SlidesTrack>
           {slides?.map((slide: any, idx: number) => {
             const isActive = currentSlides?.slideId === slide.slideId;
             const thumb = slide?.backgroundAsset?.path ?? "";
+
             return (
-              <SlideItem key={slide.slideId} $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>
-                <SlideThumbWrapper $active={isActive}>
-                  {thumb ? (
-                    <SlideThumbImg src={thumb} alt={`Slide ${idx + 1}`} />
-                  ) : (
-                    <SlideThumbEmpty>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <rect x="1" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-                        <path
-                          d="M13 7L17 5V13L13 11V7Z"
-                          stroke="currentColor"
-                          strokeWidth="1.3"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </SlideThumbEmpty>
+              <SlideFlowWrapper key={slide.slideId}>
+                <SlideItem $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>
+                  <SlideThumbWrapper $active={isActive}>
+                    {thumb ? (
+                      <SlideThumbImg src={thumb} alt={`Slide ${idx + 1}`} />
+                    ) : (
+                      <SlideThumbEmpty>
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                          <rect x="1" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+                          <path
+                            d="M13 7L17 5V13L13 11V7Z"
+                            stroke="currentColor"
+                            strokeWidth="1.3"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </SlideThumbEmpty>
+                    )}
+
+                    {/* more button */}
+                    <FloatingMoreBtn
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        setOpenMenuId((prev) => (prev === slide.slideId ? null : slide.slideId));
+                      }}
+                    >
+                      <MoreIcon />
+                    </FloatingMoreBtn>
+
+                    {/* duration */}
+                    <SlideDurationBadge>{slide.totalDuration || 0}s</SlideDurationBadge>
+
+                    {isActive && (
+                      <ActiveOverlay>
+                        <ActivePlayRing>
+                          <PlayIcon />
+                        </ActivePlayRing>
+                      </ActiveOverlay>
+                    )}
+                  </SlideThumbWrapper>
+
+                  {idx === slides.length - 1 && (
+                    <InlineAddButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddSlide();
+                      }}
+                    >
+                      <AddIcon />
+                    </InlineAddButton>
                   )}
-
-                  {isActive && (
-                    <ActiveOverlay>
-                      <ActivePlayRing>
-                        <PlayIcon />
-                      </ActivePlayRing>
-                    </ActiveOverlay>
-                  )}
-
-                  <SlideDurationBadge>{slide.totalDuration || 0}s</SlideDurationBadge>
-
-                  {slide.isDraft && <DraftBadge>Draft</DraftBadge>}
-                </SlideThumbWrapper>
-
-                <SlideFooter>
-                  <SlideIndexBadge $active={isActive}>{idx + 1}</SlideIndexBadge>
-                  <SlideMoreBtn onClick={(e) => e.stopPropagation()} title="Options">
-                    <MoreIcon />
-                  </SlideMoreBtn>
-                </SlideFooter>
-              </SlideItem>
+                </SlideItem>
+                {/* dropdown menu */}
+                {openMenuId === slide.slideId && (
+                  <MoreMenu
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() => {
+                        setDeleteSlideId(slide.slideId);
+                        setOpenMenuId(null);
+                      }}
+                    >
+                      Delete
+                    </MenuItem>
+                  </MoreMenu>
+                )}
+              </SlideFlowWrapper>
             );
           })}
         </SlidesTrack>
       </SlidesSection>
+
+      {deleteSlideId !== null && (
+        <DeleteOverlay
+          onClick={() => {
+            setDeleteSlideId(null);
+          }}
+        >
+          <DeleteModal
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <DeleteTitle>Delete Slide?</DeleteTitle>
+
+            <DeleteText>Are you sure you want to delete this slide?</DeleteText>
+
+            <DeleteActions>
+              <CancelBtn onClick={() => setDeleteSlideId(null)}>Cancel</CancelBtn>
+
+              <DeleteBtn onClick={confirmDeleteSlide}>Delete</DeleteBtn>
+            </DeleteActions>
+          </DeleteModal>
+        </DeleteOverlay>
+      )}
     </Wrapper>
   );
 };
@@ -453,19 +581,31 @@ const dotPulse = keyframes`
   50%       { opacity: 0.4; transform: scale(0.7); }
 `;
 
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
 const Wrapper = styled.div`
   flex: 1;
-  width: 100%;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.primaryBackground};
 
   @media (max-width: 768px) {
     width: 100%;
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+    flex: none;
   }
 `;
 
@@ -531,12 +671,19 @@ const Content = styled.div`
   justify-content: center;
   padding: 14px 16px;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding: 10px;
+    flex: none;
+    min-height: auto;
+  }
 `;
 
 const PlayerCard = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 0;
   border-radius: 14px;
   overflow: hidden;
   background: #0d0e10;
@@ -549,6 +696,13 @@ const PlayerCard = styled.div`
 
   &:hover {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: none;
   }
 `;
 
@@ -844,6 +998,7 @@ const EmptyText = styled.p`
 
 const SlidesSection = styled.div`
   flex-shrink: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -851,6 +1006,10 @@ const SlidesSection = styled.div`
   border-top: 1px solid ${({ theme }) => theme.editorLineBorder};
   background: ${({ theme }) => theme.primaryBackground};
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    padding-bottom: 8px;
+  }
 `;
 
 const SlidesMeta = styled.div`
@@ -884,30 +1043,6 @@ const SlideCount = styled.span`
   color: ${({ theme }) => theme.editorFileUpload};
 `;
 
-const AddSlideBtn = styled.button`
-  width: 26px;
-  height: 26px;
-  border: none;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: ${({ theme }) => theme.editorFileUpload};
-  background: transparent;
-  transition: all 0.18s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.editorLineBorder};
-    color: ${({ theme }) => theme.primaryText};
-    transform: scale(1.06);
-  }
-
-  &:active {
-    transform: scale(0.94);
-  }
-`;
-
 const SlidesTrack = styled.div`
   display: flex;
   align-items: flex-start;
@@ -924,7 +1059,9 @@ const SlidesTrack = styled.div`
 `;
 
 const SlideItem = styled.div<{ $active: boolean }>`
-  width: 112px;
+  position: relative;
+  width: 142px;
+  height: 90px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -939,8 +1076,8 @@ const SlideItem = styled.div<{ $active: boolean }>`
 
 const SlideThumbWrapper = styled.div<{ $active: boolean }>`
   position: relative;
-  width: 112px;
-  height: 68px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border-radius: 10px;
   border: 2px solid ${({ $active, theme }) => ($active ? theme.activeMenu ?? "#009AF7" : theme.editorLineBorder)};
@@ -1012,54 +1149,242 @@ const SlideDurationBadge = styled.span`
   backdrop-filter: blur(6px);
 `;
 
-const DraftBadge = styled.span`
-  position: absolute;
-  left: 5px;
-  top: 5px;
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  color: #ff8c00;
-  background: rgba(255, 140, 0, 0.18);
-  backdrop-filter: blur(4px);
-`;
-
-const SlideFooter = styled.div`
+const SlideFlowWrapper = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 2px;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-right: 18px;
 `;
 
-const SlideIndexBadge = styled.span<{ $active: boolean }>`
-  font-family: "Montserrat", sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  color: ${({ $active, theme }) => ($active ? theme.activeMenu ?? "#009AF7" : theme.editorFileUpload)};
-  transition: color 0.2s;
-`;
-
-const SlideMoreBtn = styled.button`
+const FloatingMoreBtn = styled.button`
+  position: absolute;
+  top: 6px;
+  right: 6px;
   width: 22px;
   height: 22px;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #222;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: ${({ theme }) => theme.editorFileUpload};
-  background: transparent;
-  transition: all 0.15s ease;
+  z-index: 15;
+  transition: all 0.18s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.editorLineBorder};
-    color: ${({ theme }) => theme.primaryText};
+    transform: scale(1.08);
+    background: white;
   }
 
   &:active {
     transform: scale(0.94);
   }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+const InlineAddButton = styled.button`
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  background: #fff;
+  color: #111;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  z-index: 10;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), 0 0 0 3px rgba(0, 0, 0, 0.12);
+
+  transition: all 0.18s ease;
+
+  &:hover {
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.94);
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+const MoreMenu = styled.div`
+  position: absolute;
+  top: 6px;
+  right: 0;
+
+  min-width: 110px;
+  padding: 6px;
+
+  border-radius: 10px;
+
+  background: ${({ theme }) => theme.editorDropDownContent ?? "#1e1f24"};
+
+  border: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+
+  z-index: 999;
+`;
+
+const MenuItem = styled.button`
+  width: 100%;
+  border: none;
+  background: transparent;
+
+  padding: 10px 12px;
+  border-radius: 8px;
+
+  text-align: left;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  color: #ff5c5c;
+
+  cursor: pointer;
+
+  transition: background 0.18s ease;
+
+  &:hover {
+    background: rgba(255, 92, 92, 0.12);
+  }
+`;
+
+const DeleteOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+`;
+
+const DeleteModal = styled.div`
+  width: 340px;
+  padding: 22px;
+
+  border-radius: 16px;
+
+  background: ${({ theme }) => theme.editorDropDownContent ?? "#1e1f24"};
+
+  border: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+`;
+
+const DeleteTitle = styled.h3`
+  margin: 0 0 10px;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  color: ${({ theme }) => theme.primaryText};
+`;
+
+const DeleteText = styled.p`
+  margin: 0;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  color: ${({ theme }) => theme.editorFileUpload};
+`;
+
+const DeleteActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 22px;
+`;
+
+const CancelBtn = styled.button`
+  border: none;
+  padding: 10px 16px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  color: ${({ theme }) => theme.primaryText};
+
+  transition: 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+`;
+
+const DeleteBtn = styled.button`
+  border: none;
+  padding: 10px 16px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  background: #ff4d4f;
+  color: white;
+
+  transition: 0.2s ease;
+
+  &:hover {
+    background: #ff2f32;
+  }
+`;
+
+const PanelLoaderWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: ${({ theme }) => theme.primaryBackground};
+`;
+
+const PanelSpinner = styled.div`
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  border: 3px solid rgba(120, 120, 120, 0.2);
+  border-top-color: ${({ theme }) => theme.activeMenu};
+
+  animation: ${rotate} 0.8s linear infinite;
 `;

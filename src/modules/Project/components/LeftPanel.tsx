@@ -94,6 +94,7 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [showLockModal, setShowLockModal] = useState(false);
   const [pendingVideo, setPendingVideo] = useState<any>(null);
+  const [panelLoading, setPanelLoading] = useState(true);
 
   const paragraphs: Paragraph[] = [...(currentSlides?.projectParagraphs ?? []), ...extraParagraphs];
 
@@ -114,15 +115,24 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
     console.log("currebtSlidesId: ", currentSlides.slideId);
     console.log("projectId: ", projectId);
 
+    const userText = prompt.trim();
+
+    setExtraParagraphs((prev) => [
+      ...prev,
+      {
+        text: userText,
+        Videopath: "",
+      },
+    ]);
+
     setAttachedFiles([]);
     setPrompt("");
     setSelectedModel(models[0]);
-
-    const userText = prompt.trim();
     setIsTyping(true);
+
     setTimeout(() => {
       setIsTyping(false);
-      setExtraParagraphs((prev) => [...prev, { text: userText, Videopath: "" }]);
+      setExtraParagraphs((prev) => [...prev, { text: "", Videopath: "" }]);
     }, 1500);
   };
 
@@ -146,7 +156,6 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
     handleVideoClick(pendingVideo.idx);
 
     handleLockVideo(pendingVideo.idx, pendingVideo.path);
-  
 
     setSelectedVideo(pendingVideo.path);
 
@@ -158,6 +167,16 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
     setShowLockModal(false);
     setPendingVideo(null);
   };
+
+  useEffect(() => {
+    setPanelLoading(true);
+
+    const timer = setTimeout(() => {
+      setPanelLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentSlides]);
 
   return (
     <LeftPanel>
@@ -176,46 +195,52 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
 
       <PanelBody>
         <ChatSection>
-          {/* ── Chat Column ── */}
-          <ChatColumn>
-            <PanelHeader>
-              <SectionLabel>Conversation</SectionLabel>
-            </PanelHeader>
+          {panelLoading ? (
+            <PanelLoaderWrapper>
+              <PanelSpinner />
+            </PanelLoaderWrapper>
+          ) : (
+            <>
+              {/* ── Chat Column ── */}
+              <ChatColumn>
+                <PanelHeader>
+                  <SectionLabel>Conversation</SectionLabel>
+                </PanelHeader>
 
-            <ChatMessages>
-              {paragraphs.length === 0 && (
-                <EmptyState>No conversation yet. Type a prompt below to get started.</EmptyState>
-              )}
+                <ChatMessages>
+                  {paragraphs.length === 0 && (
+                    <EmptyState>No conversation yet. Type a prompt below to get started.</EmptyState>
+                  )}
 
-              {paragraphs.map((para, idx) => (
-                <ConversationPair key={`${currentSlides.id}-${idx}`}>
-                  {/* User bubble */}
-                  {para.text || (para.imagePaths && para.imagePaths.length > 0) ? (
-                    <MessageRow $role="user">
-                      <MessageBubble $role="user">
-                        {/* Attached images grid */}
-                        {para.imagePaths && para.imagePaths.length > 0 && (
-                          <ImageGrid $count={para.imagePaths.length}>
-                            {para.imagePaths.map((src, imgIdx) => (
-                              <ImageThumbWrapper key={imgIdx} onClick={() => setExpandedImage(src)}>
-                                <ImageThumb src={src} alt={`attachment-${imgIdx + 1}`} />
-                                <ImageOverlay>
-                                  <ExpandIcon />
-                                </ImageOverlay>
-                              </ImageThumbWrapper>
-                            ))}
-                          </ImageGrid>
-                        )}
-                        {para.text ? <BubbleText>{para.text}</BubbleText> : null}
-                        <Timestamp>
-                          {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </Timestamp>
-                      </MessageBubble>
-                    </MessageRow>
-                  ) : null}
+                  {paragraphs.map((para, idx) => (
+                    <ConversationPair key={`${currentSlides.id}-${idx}`}>
+                      {/* User bubble */}
+                      {para.text || (para.imagePaths && para.imagePaths.length > 0) ? (
+                        <MessageRow $role="user">
+                          <MessageBubble $role="user">
+                            {/* Attached images grid */}
+                            {para.imagePaths && para.imagePaths.length > 0 && (
+                              <ImageGrid $count={para.imagePaths.length}>
+                                {para.imagePaths.map((src, imgIdx) => (
+                                  <ImageThumbWrapper key={imgIdx} onClick={() => setExpandedImage(src)}>
+                                    <ImageThumb src={src} alt={`attachment-${imgIdx + 1}`} />
+                                    <ImageOverlay>
+                                      <ExpandIcon />
+                                    </ImageOverlay>
+                                  </ImageThumbWrapper>
+                                ))}
+                              </ImageGrid>
+                            )}
+                            {para.text ? <BubbleText>{para.text}</BubbleText> : null}
+                            <Timestamp>
+                              {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </Timestamp>
+                          </MessageBubble>
+                        </MessageRow>
+                      ) : null}
 
-                  {/* AI bubble */}
-                  {/* {para.Videopath ? (
+                      {/* AI bubble */}
+                      {/* {para.Videopath ? (
                     <MessageRow $role="ai">
                       <MessageBubble $role="ai">
                         <LinkedVideoCard $active={lockedVideoIndex === idx} onClick={() => handleLockVideo(idx, para.Videopath)}>
@@ -231,46 +256,48 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
                       </MessageBubble>
                     </MessageRow>
                   ) : null} */}
-                  {para.Videopath ? (
-                    <MessageRow $role="ai">
-                      <MessageBubble $role="ai">
-                        <VideoContainer
-                          $active={lockedVideoIndex === idx}
-                          onClick={() => handleLockVideo(idx, para.Videopath)}
-                        >
-                          <video src={para.Videopath} controls autoPlay={false} preload="metadata" />
-                        </VideoContainer>
+                      {para.Videopath ? (
+                        <MessageRow $role="ai">
+                          <MessageBubble $role="ai">
+                            <VideoContainer
+                              $active={lockedVideoIndex === idx}
+                              onClick={() => handleLockVideo(idx, para.Videopath)}
+                            >
+                              <video src={para.Videopath} controls autoPlay={false} preload="metadata" />
+                            </VideoContainer>
 
-                        <Timestamp>
-                          {new Date().toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </Timestamp>
+                            <Timestamp>
+                              {new Date().toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </Timestamp>
+                          </MessageBubble>
+                        </MessageRow>
+                      ) : null}
+                    </ConversationPair>
+                  ))}
+
+                  {isTyping && (
+                    <MessageRow $role="ai">
+                      <Avatar>
+                        <AiAvatarIcon />
+                      </Avatar>
+                      <MessageBubble $role="ai">
+                        <TypingDots>
+                          <Dot $delay="0s" />
+                          <Dot $delay="0.18s" />
+                          <Dot $delay="0.36s" />
+                        </TypingDots>
                       </MessageBubble>
                     </MessageRow>
-                  ) : null}
-                </ConversationPair>
-              ))}
+                  )}
 
-              {isTyping && (
-                <MessageRow $role="ai">
-                  <Avatar>
-                    <AiAvatarIcon />
-                  </Avatar>
-                  <MessageBubble $role="ai">
-                    <TypingDots>
-                      <Dot $delay="0s" />
-                      <Dot $delay="0.18s" />
-                      <Dot $delay="0.36s" />
-                    </TypingDots>
-                  </MessageBubble>
-                </MessageRow>
-              )}
-
-              <div ref={chatEndRef} />
-            </ChatMessages>
-          </ChatColumn>
+                  <div ref={chatEndRef} />
+                </ChatMessages>
+              </ChatColumn>
+            </>
+          )}
 
           {/* ── Videos Column ── */}
           <VideoSection $visible={videoSectionVisible}>
@@ -305,14 +332,14 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
                       // handleVideoClick(idx);
                       // handleLockVideo(idx, para.Videopath);
                       // setSelectedVideo(para.Videopath);
-                      setPendingVideo({  
-                        idx,  
-                        path: para.Videopath,  
-                      });  
-  
-                      setShowLockModal(true);  
-                    }}  
-                  >  
+                      setPendingVideo({
+                        idx,
+                        path: para.Videopath,
+                      });
+
+                      setShowLockModal(true);
+                    }}
+                  >
                     <VideoCardIcon>
                       <VideoThumbIcon />
                     </VideoCardIcon>
@@ -330,6 +357,7 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
               })}
             </VideoList>
           </VideoSection>
+
           {showLockModal && (
             <ModalOverlay>
               <ModalCard>
@@ -350,12 +378,23 @@ const LeftPanelSide = ({ currentSlides, onSettings, onRename, onClose, setSelect
 
           {/* Toggle tab when video section is hidden */}
           {!videoSectionVisible && (
-            <VideoToggleTab onClick={() => setVideoSectionVisible(true)} title="Show Videos">
-              <VideoThumbIcon />
-              <VideoToggleLabel>Videos</VideoToggleLabel>
-            </VideoToggleTab>
+            <>
+              {/* Desktop */}
+              <VideoToggleTabDesktop onClick={() => setVideoSectionVisible(true)} title="Show Videos">
+                <VideoThumbIcon />
+                <VideoToggleLabel>Videos</VideoToggleLabel>
+              </VideoToggleTabDesktop>
+            </>
           )}
         </ChatSection>
+
+        {/* Mobile floating button */}
+        {!videoSectionVisible && (
+          <FloatingVideoButton onClick={() => setVideoSectionVisible(true)} title="Show Videos">
+            <VideoThumbIcon />
+            <span>Videos</span>
+          </FloatingVideoButton>
+        )}
 
         {/* ── Input ── */}
         <InputArea>
@@ -406,6 +445,15 @@ const slideIn = keyframes`
   to   { opacity: 1; transform: translateX(0); }
 `;
 
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
 /* ─────────────────────────── Layout ─────────────────────────── */
 
 const LeftPanel = styled.div`
@@ -415,11 +463,10 @@ const LeftPanel = styled.div`
   display: flex;
   flex-direction: column;
   /* KEY: panel itself never scrolls — children handle their own scroll */
-  height: 100%;
+
   min-width: 0;
   min-height: 0;
 
-  overflow: hidden;
   background-color: ${({ theme }) => theme.primaryBackground};
   border-right: 1px solid ${({ theme }) => theme.editorLineBorder};
   flex-shrink: 0;
@@ -428,12 +475,18 @@ const LeftPanel = styled.div`
   @media (max-width: 1024px) {
     min-width: 280px;
   }
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+
+    flex: none;
+    height: auto;
+
     border-right: none;
     border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+    overflow: visible;
   }
 `;
 
@@ -511,6 +564,8 @@ const ChatSection = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 `;
 
@@ -633,7 +688,6 @@ const VideoContainer = styled.div<{ $active: boolean }>`
   transition: border-color 0.15s;
   all: unset;
   cursor: pointer;
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.activeMenu : theme.editorLineBorder)};
   background: ${({ theme }) => (theme.primaryBackground === "#F0F0F3" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.25)")};
 
   video {
@@ -789,10 +843,16 @@ const VideoSection = styled.div<{ $visible: boolean }>`
   transition: flex 0.22s ease, min-width 0.22s ease;
 
   @media (max-width: 768px) {
-    width: ${({ $visible }) => ($visible ? "100%" : "0")};
-    min-width: 0;
+    width: 100%;
+    flex: none;
+
+    height: ${({ $visible }) => ($visible ? "260px" : "0")};
+    min-width: 100%;
+
     border-left: none;
     border-top: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.editorLineBorder}` : "none")};
+
+    transition: height 0.22s ease;
   }
 `;
 
@@ -841,16 +901,6 @@ const VideoToggleTab = styled.button`
     opacity: 1;
     background: rgba(128, 128, 128, 0.06);
   }
-`;
-
-const VideoToggleLabel = styled.span`
-  font-family: "Montserrat", sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
 `;
 
 const VideoCard = styled.button<{ $active: boolean }>`
@@ -1029,4 +1079,106 @@ const ConfirmBtn = styled(ModalButton)`
   }
 `;
 
+const VideoToggleTabDesktop = styled.button`
+  all: unset;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  width: 28px;
+  flex-shrink: 0;
+
+  border-left: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+  background: transparent;
+
+  color: ${({ theme }) => theme.editorFileUpload};
+
+  opacity: 0.7;
+
+  transition: opacity 0.15s, background 0.15s;
+
+  padding: 12px 0;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(128, 128, 128, 0.06);
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const VideoToggleLabel = styled.span`
+  font-family: "Montserrat", sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+`;
+
+const FloatingVideoButton = styled.button`
+  display: none;
+
+  @media (max-width: 768px) {
+    all: unset;
+
+    position: fixed;
+    right: 14px;
+    bottom: 90px;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 14px;
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    background: ${({ theme }) =>
+      theme.primaryBackground === "#F0F0F3" ? "rgba(255,255,255,0.95)" : "rgba(24,24,28,0.95)"};
+
+    border: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+    color: ${({ theme }) => theme.primaryText};
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+
+    backdrop-filter: blur(10px);
+  }
+`;
+
+const PanelLoaderWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: ${({ theme }) => theme.primaryBackground};
+`;
+
+const PanelSpinner = styled.div`
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  border: 3px solid rgba(120, 120, 120, 0.2);
+  border-top-color: ${({ theme }) => theme.activeMenu};
+
+  animation: ${rotate} 0.8s linear infinite;
+`;
 export default LeftPanelSide;

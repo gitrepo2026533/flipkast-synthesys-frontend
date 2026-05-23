@@ -38,6 +38,7 @@ export interface Project {
   updateDateTime?: string;
   subTitle?: string;
   paragraphs: Paragraphs[];
+  slides?: any[];
 }
 
 export interface ProjectList {

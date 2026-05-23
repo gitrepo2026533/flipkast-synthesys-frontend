@@ -85,6 +85,21 @@ const Sidebar = styled.nav`
   flex-shrink: 0;
   min-height: 0;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
+
+    flex-direction: row;
+
+    justify-content: space-around;
+
+    border-right: none;
+    border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 `;
 
 const NavItem = styled.button<{ $active: boolean }>`
