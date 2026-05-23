@@ -82,15 +82,24 @@ export default withPrivateRoute(Project);
 const Wrapper = styled.div`
   width: 100%;
   height: 100vh;
+  min-height: 0;
+
   display: flex;
   flex-direction: column;
+
   overflow: hidden;
   background: ${({ theme }) => theme.primaryBackground};
+
+  @media (max-width: 768px) {
+    height: auto;
+    overflow-y: auto;
+  }
 `;
 
 const PageLayout = styled.div`
   display: flex;
   flex: 1;
+
   min-width: 0;
   min-height: 0;
 
@@ -98,6 +107,10 @@ const PageLayout = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100%;
   }
 `;
 

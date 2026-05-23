@@ -5,6 +5,7 @@ import {
   CREATE_PROJECT_SERVER,
   CREATE_VIDEO_PROJECT_SERVER,
   DELETE_PROJECT_SERVER,
+  DELETE_PROJECT_SLIDE_SERVER,
   GET_PROJECT_LIST_SERVER,
   GET_PROJECT_SERVER,
   GET_VIDEO_BY_PROJECT_ID_SERVER,
@@ -453,7 +454,22 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
+    case `${DELETE_PROJECT_SLIDE_SERVER}_SUCCESS`: {
+      const deletedSlideId = action.meta.previousAction.payload.request.data.slideId;
 
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          project: {
+            ...state[ProjectModules.project].project,
+            slides:
+              state[ProjectModules.project].project?.slides?.filter((slide: any) => slide.slideId !== deletedSlideId) ||
+              [],
+          },
+        },
+      };
+    }
     default: {
       return { ...state };
     }

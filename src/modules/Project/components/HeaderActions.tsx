@@ -73,6 +73,7 @@ const HeaderActions = ({ credits }: any) => {
               order: 1,
               slideBackgroundColor: "",
               projectParagraphs: [],
+              audioPath: projectData?.slides?.[0]?.audioPath,
             },
           ],
           status: 1,

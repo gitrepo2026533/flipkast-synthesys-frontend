@@ -15,6 +15,7 @@ import {
   createVideoProjectServer,
   GET_VIDEO_PROJECT_SERVER,
   GET_VIDEO_BY_PROJECT_ID_SERVER,
+  DELETE_PROJECT_SLIDE_SERVER,
 } from "../actions/projectAction";
 import { ProjectModules } from "../../types/project";
 import { Popups, updatePopup } from "../actions/popupsActions";
@@ -43,6 +44,9 @@ const projectSagas = [
   takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}`, handleGetVideoById),
   takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}_FAIL`, handleGetVideoByIdFail),
   takeEvery(`${GET_VIDEO_BY_PROJECT_ID_SERVER}_SUCCESS`, handleGetVideoByIdSuccess),
+  takeEvery(`${DELETE_PROJECT_SLIDE_SERVER}_FAIL`, handleDeleteProjectSlideFail),
+
+  takeEvery(`${DELETE_PROJECT_SLIDE_SERVER}_SUCCESS`, handleDeleteProjectSlideSuccess),
 ];
 
 function* handleGetProjectListFail() {
@@ -123,6 +127,18 @@ function* handleGetVideoById() {
     }),
   );
 }
+function* handleDeleteProjectSlideSuccess(action: any) {
+  yield toast.success("Slide deleted successfully");
+}
+
+function* handleDeleteProjectSlideFail(action: any) {
+  console.log(action.error);
+  yield toast.error("Error while deleting slide");
+}
+
+// function* handleCreateVideoProjectSuccess(action: any): any {
+//   try {
+//     const projectId = action.payload.data.data.projectId;
 
 function* handleGetVideoByIdSuccess() {
   yield put(

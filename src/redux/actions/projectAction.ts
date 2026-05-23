@@ -8,6 +8,7 @@ export const UPDATE_PROJECT_SERVER = "UPDATE_PROJECT_SERVER";
 export const CLEAR_CURRENT_PROJECT = "CLEAR_CURRENT_PROJECT";
 export const PLAY_AUDIO = "PLAY_AUDIO";
 export const DELETE_PROJECT_SERVER = "DELETE_PROJECT_SERVER";
+export const DELETE_PROJECT_SLIDE_SERVER = "DELETE_PROJECT_SLIDE_SERVER";
 export const UPDATE_HAS_MORE_PROJECTS = "UPDATE_HAS_MORE_PROJECTS";
 export const SET_PAGE_PROJECTS = "SET_PAGE_PROJECTS";
 export const CREATE_VIDEO_PROJECT = "CREATE_VIDEO_PROJECT";
@@ -85,7 +86,7 @@ export interface updateVideoProjectPayload {
     slideId: number;
     order: number;
     slideBackgroundColor?: string;
-
+    audioPath?: string;
     projectParagraphs?: {
       projectParagraphId: number;
       order?: number;
@@ -97,6 +98,11 @@ export interface updateVideoProjectPayload {
   projectId: number;
   slideId?: number;
   projectParagraphId?: number;
+}
+
+interface DeleteProjectSlideProps {
+  projectId: number | string;
+  slideId: number | string;
 }
 
 export const updateHasMoreProjects = ({ hasMore }: UpdateHasMoreProjectsProps) => ({
@@ -194,6 +200,20 @@ export const deleteProjectserver = ({ projectId }: DeleteProjectProps) => ({
     request: {
       method: "POST",
       url: `/project/delete?Id=${projectId}`,
+    },
+  },
+});
+
+export const deleteProjectSlideServer = ({ projectId, slideId }: DeleteProjectSlideProps) => ({
+  type: DELETE_PROJECT_SLIDE_SERVER,
+  payload: {
+    request: {
+      method: "DELETE",
+      url: `/Project/deleteSlides?projectId=${projectId}&slideId=${slideId}`,
+      data: {
+        projectId,
+        slideId,
+      },
     },
   },
 });

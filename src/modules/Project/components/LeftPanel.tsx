@@ -51,6 +51,7 @@ interface Paragraph {
   text: string;
   outputAudio: string;
   imagePaths?: string[];
+  errorMessage?: string;
 }
 
 const LeftPanelSide = () => {
@@ -114,7 +115,9 @@ const LeftPanelSide = () => {
     // dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId)));
   };
 
-  const videoParagraphs = paragraphs?.filter((p) => p.outputAudio);
+  const videoParagraphs = paragraphs?.filter(
+    (p) => p.outputAudio != null
+  );
 
   if (!slideData) return null;
 
@@ -147,7 +150,6 @@ const LeftPanelSide = () => {
 
       <PanelBody>
         <ChatSection>
-          {/* ── Chat Column ── */}
           <ChatColumn>
             <PanelHeader>
               <SectionLabel>Conversation</SectionLabel>
@@ -213,7 +215,7 @@ const LeftPanelSide = () => {
                           ⚠️ AI Generation Failed
                         </ErrorTitle>
 
-                        <ErrorMessage> Please retry again.
+                        <ErrorMessage> {para?.errorMessage}
                         </ErrorMessage>
                       </ErrorContainer>
                     )}
@@ -290,6 +292,7 @@ const LeftPanelSide = () => {
               )}
             </VideoList>
           </VideoSection>
+
           {showLockModal && (
             <ModalOverlay>
               <ModalCard>
@@ -310,12 +313,23 @@ const LeftPanelSide = () => {
 
           {/* Toggle tab when video section is hidden */}
           {!videoSectionVisible && (
-            <VideoToggleTab onClick={() => setVideoSectionVisible(true)} title="Show Videos">
-              <VideoThumbIcon />
-              <VideoToggleLabel>Videos</VideoToggleLabel>
-            </VideoToggleTab>
+            <>
+              {/* Desktop */}
+              <VideoToggleTabDesktop onClick={() => setVideoSectionVisible(true)} title="Show Videos">
+                <VideoThumbIcon />
+                <VideoToggleLabel>Videos</VideoToggleLabel>
+              </VideoToggleTabDesktop>
+            </>
           )}
         </ChatSection>
+
+        {/* Mobile floating button */}
+        {!videoSectionVisible && (
+          <FloatingVideoButton onClick={() => setVideoSectionVisible(true)} title="Show Videos">
+            <VideoThumbIcon />
+            <span>Videos</span>
+          </FloatingVideoButton>
+        )}
 
         {/* ── Input ── */}
         <InputArea>
@@ -362,6 +376,15 @@ const fadeIn = keyframes`
 `;
 
 
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
 /* ─────────────────────────── Layout ─────────────────────────── */
 
 const LeftPanel = styled.div`
@@ -371,11 +394,10 @@ const LeftPanel = styled.div`
   display: flex;
   flex-direction: column;
   /* KEY: panel itself never scrolls — children handle their own scroll */
-  height: 100%;
+
   min-width: 0;
   min-height: 0;
 
-  overflow: hidden;
   background-color: ${({ theme }) => theme.primaryBackground};
   border-right: 1px solid ${({ theme }) => theme.editorLineBorder};
   flex-shrink: 0;
@@ -384,12 +406,18 @@ const LeftPanel = styled.div`
   @media (max-width: 1024px) {
     min-width: 280px;
   }
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+
+    flex: none;
+    height: auto;
+
     border-right: none;
     border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+    overflow: visible;
   }
 `;
 
@@ -467,6 +495,8 @@ const ChatSection = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 `;
 
@@ -589,7 +619,6 @@ const VideoContainer = styled.div<{ $active: boolean }>`
   transition: border-color 0.15s;
   all: unset;
   cursor: pointer;
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.activeMenu : theme.editorLineBorder)};
   background: ${({ theme }) => (theme.primaryBackground === "#F0F0F3" ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.25)")};
 
   video {
@@ -745,10 +774,16 @@ const VideoSection = styled.div<{ $visible: boolean }>`
   transition: flex 0.22s ease, min-width 0.22s ease;
 
   @media (max-width: 768px) {
-    width: ${({ $visible }) => ($visible ? "100%" : "0")};
-    min-width: 0;
+    width: 100%;
+    flex: none;
+
+    height: ${({ $visible }) => ($visible ? "260px" : "0")};
+    min-width: 100%;
+
     border-left: none;
     border-top: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.editorLineBorder}` : "none")};
+
+    transition: height 0.22s ease;
   }
 `;
 
@@ -797,16 +832,6 @@ const VideoToggleTab = styled.button`
     opacity: 1;
     background: rgba(128, 128, 128, 0.06);
   }
-`;
-
-const VideoToggleLabel = styled.span`
-  font-family: "Montserrat", sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
 `;
 
 const VideoCard = styled.button<{ $active: boolean }>`
@@ -1025,4 +1050,106 @@ const RetryButton = styled.button`
   }
 `;
 
+const VideoToggleTabDesktop = styled.button`
+  all: unset;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  width: 28px;
+  flex-shrink: 0;
+
+  border-left: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+  background: transparent;
+
+  color: ${({ theme }) => theme.editorFileUpload};
+
+  opacity: 0.7;
+
+  transition: opacity 0.15s, background 0.15s;
+
+  padding: 12px 0;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(128, 128, 128, 0.06);
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const VideoToggleLabel = styled.span`
+  font-family: "Montserrat", sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+`;
+
+const FloatingVideoButton = styled.button`
+  display: none;
+
+  @media (max-width: 768px) {
+    all: unset;
+
+    position: fixed;
+    right: 14px;
+    bottom: 90px;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 14px;
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    background: ${({ theme }) =>
+    theme.primaryBackground === "#F0F0F3" ? "rgba(255,255,255,0.95)" : "rgba(24,24,28,0.95)"};
+
+    border: 1px solid ${({ theme }) => theme.editorLineBorder};
+
+    color: ${({ theme }) => theme.primaryText};
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+
+    backdrop-filter: blur(10px);
+  }
+`;
+
+const PanelLoaderWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: ${({ theme }) => theme.primaryBackground};
+`;
+
+const PanelSpinner = styled.div`
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  border: 3px solid rgba(120, 120, 120, 0.2);
+  border-top-color: ${({ theme }) => theme.activeMenu};
+
+  animation: ${rotate} 0.8s linear infinite;
+`;
 export default LeftPanelSide;
