@@ -232,7 +232,7 @@ const PromptWrapper = styled.div`
   width: 100%;
   background: ${({ theme }) => theme.editor};
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   border-radius: 16px;
   padding: 10px 10px 8px;
   display: flex;
@@ -270,7 +270,7 @@ const PromptTextarea = styled.textarea<{
   }
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) =>
-        theme.editorLineBorder};
+        theme.chatTextfieldBorder};
     border-radius: 999px;
   }
 `;
@@ -297,7 +297,7 @@ const AttachmentButton = styled.button`
   height: 34px;
   border-radius: 12px;
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   background: ${({ theme }) =>
         theme.editorDropDownContent};
   color: ${({ theme }) => theme.editorFileUpload};
@@ -325,7 +325,7 @@ const AttachmentMenu = styled.div`
   min-width: 160px;
   background: ${({ theme }) => theme.editor};
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   border-radius: 12px;
   overflow: hidden;
   z-index: 20;
@@ -349,7 +349,7 @@ const AttachmentMenuItem = styled.button`
 const Divider = styled.div`
   width: 1px;
   height: 16px;
-  background: ${({ theme }) => theme.editorLineBorder};
+  background: ${({ theme }) => theme.chatTextfieldBorder};
 `;
 
 const SendButton = styled.button<{
@@ -393,7 +393,7 @@ const ModelButton = styled.button`
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   background: ${({ theme }) =>
         theme.editorDropDownContent};
   color: ${({ theme }) => theme.primaryText};
@@ -413,7 +413,7 @@ const ModelMenu = styled.div`
   min-width: 180px;
   background: ${({ theme }) => theme.editor};
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   border-radius: 12px;
   overflow: hidden;
   z-index: 50;
@@ -461,7 +461,7 @@ const PreviewImagesWrapper = styled.div`
 
   &::-webkit-scrollbar-thumb {
     background: ${({ theme }) =>
-        theme.editorLineBorder};
+        theme.chatTextfieldBorder};
     border-radius: 999px;
   }
 `;
@@ -476,7 +476,7 @@ const PreviewCard = styled.div`
   background: ${({ theme }) =>
         theme.editorDropDownContent};
   border: 1px solid
-    ${({ theme }) => theme.editorLineBorder};
+    ${({ theme }) => theme.chatTextfieldBorder};
   box-shadow: ${({ theme }) => theme.cardShadow};
 `;
 

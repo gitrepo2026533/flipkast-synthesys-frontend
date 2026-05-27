@@ -9,12 +9,12 @@ import VideoProjectCard from "./components/VideoProjectCard";
 import { models, chips } from "./data";
 import { useDispatch, useSelector } from "react-redux";
 import { createVideoProjectServer, getVideoProjectServer, resetCreatedProject } from "../../redux/actions/projectAction";
-import { getCreatedProject, getProjectList, getProjectListLoading, getTotalPages, getProjectListPageNumber, getHasMore } from "../../redux/reducers/projectReducer";
+import { getCreatedProject, getProjectList, getProjectListLoading, getTotalPages, createProjectLoading } from "../../redux/reducers/projectReducer";
 import Textfield from "../../components/Textfield/Textfield";
 import { SearchIcon } from "../../components/Icons/SearchIcon";
+import CircularProgress from "../../components/Icons/CircularProgress";
 
 const AiVideo = () => {
-
   const navigate = useNavigate()
   const [prompt, setPrompt] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -29,11 +29,12 @@ const AiVideo = () => {
   const [sortWith, setSortWith] = useState("updateDateTime")
   const [sortByDesc, setSortByDesc] = useState(true)
   const videoProjects = useSelector(getProjectList)
+  const isCreatingProject = useSelector(createProjectLoading)
   const createdProject = useSelector(getCreatedProject)
   const projectListLoading = useSelector(getProjectListLoading)
   const totalPages = useSelector(getTotalPages)
-  const hasMore = useSelector(getHasMore)
   const [projectsData, setProjectsData] = useState<any[]>([]);
+  const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
 
   const handleSend = () => {
     if (prompt.trim() === "") return;
@@ -65,65 +66,92 @@ const AiVideo = () => {
   }, [createdProject])
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
+  useEffect(() => {
     dispatch(getVideoProjectServer({
       pageNumber, pageSize, keyword, projectTypeId, status, sortWith, sortByDesc
     }));
-  }, [pageNumber, keyword]);
+  }, [pageNumber, debouncedKeyword]);
 
   useEffect(() => {
-    setProjectsData((prev: any) => [...prev, ...videoProjects]);
-  }, [videoProjects])
+    if (pageNumber === 1) {
+      // fresh load or search
+      setProjectsData(videoProjects);
+    } else {
+      // pagination
+      setProjectsData((prev: any) => [...prev, ...videoProjects]);
+    }
+  }, [videoProjects]);
 
   return (
     <Wrapper>
       <SidebarLayout>
-        <Content>
-          <Container>
-            <HeroSection>
-              <HeroText>
-                <PageTitle>Generate AI Videos</PageTitle>
-                <PageSubtitle>from Prompt</PageSubtitle>
-              </HeroText>
+        {isCreatingProject ? (
+          <CreatingProjectWrapper>
+            <CircularProgress size={22} />
+            <CreatingText>Creating your video project...</CreatingText>
+          </CreatingProjectWrapper>
+        ) : (
+          <Content>
+            <Container>
+              <HeroSection>
+                <HeroText>
+                  <PageTitle>Generate AI Videos</PageTitle>
+                  <PageSubtitle>from Prompt</PageSubtitle>
+                </HeroText>
 
-              <ChatInput
-                value={prompt}
-                width="100%"
-                minHeight="50px"
-                maxHeight="140px"
-                chips={chips}
-                attachedFiles={attachedFiles}
-                setAttachedFiles={setAttachedFiles}
-                onChange={setPrompt}
-                onSend={handleSend}
-                onSelectModel={setSelectedModel}
-                selectedModel={selectedModel}
-                models={models}
-              />
-            </HeroSection>
-
-            <ProjectsSection>
-              <ProjectsHeader>
-                <ProjectsLabel>My Projects</ProjectsLabel>
-                <Textfield
-                  value={keyword}
-                  placeholder="Search for voice actors, languages etc."
-                  startAdornment={<SearchIcon />}
-                  onChange={handleSearchChange}
+                <ChatInput
+                  value={prompt}
+                  width="100%"
+                  minHeight="50px"
+                  maxHeight="140px"
+                  chips={chips}
+                  attachedFiles={attachedFiles}
+                  setAttachedFiles={setAttachedFiles}
+                  onChange={setPrompt}
+                  onSend={handleSend}
+                  onSelectModel={setSelectedModel}
+                  selectedModel={selectedModel}
+                  models={models}
                 />
-              </ProjectsHeader>
-              <ProjectsGrid onScroll={handleScroll}>
-                {projectsData.map((project) => (
-                  <VideoProjectCard
-                    key={project.projectId}
-                    title={project.title}
-                    image={ project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354" }
-                    onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
+              </HeroSection>
+
+              <ProjectsSection>
+                <ProjectsHeader>
+                  <ProjectsLabel>My Projects</ProjectsLabel>
+                  <Textfield
+                    value={keyword}
+                    placeholder="Search for voice actors, languages etc."
+                    startAdornment={<SearchIcon />}
+                    onChange={handleSearchChange}
                   />
-                ))}
-              </ProjectsGrid>
-            </ProjectsSection>
-          </Container>
-        </Content>
+                </ProjectsHeader>
+                <ProjectsGrid onScroll={handleScroll}>
+                  {projectsData.map((project) => (
+                    <VideoProjectCard
+                      key={project.projectId}
+                      title={project.title}
+                      image={project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354"}
+                      preViewVideo={project?.output}
+                      onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
+                    />
+                  ))}
+                  {projectListLoading && (
+                    <LoadingWrapper>
+                      <CircularProgress />
+                    </LoadingWrapper>
+                  )}
+                </ProjectsGrid>
+              </ProjectsSection>
+            </Container>
+          </Content>
+        )}
       </SidebarLayout>
     </Wrapper>
   );
@@ -241,21 +269,39 @@ const ProjectsGrid = styled.div`
   padding-bottom: 10px;
   align-content: start;
   width: 100%;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
   &::-webkit-scrollbar {
-    width: 4px;
+    display: none;
   }
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) =>
-    theme.editorLineBorder};
-    border-radius: 999px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 16px;
   }
+`;
+
+const LoadingWrapper = styled.div`
+  display: flex;
+  justify-content: center;  
+  align-items: center;
+  padding: 20px 0;
+`;
+
+const CreatingProjectWrapper = styled.div`
+  display: flex;
+  justify-content: center;  
+  align-items: center;
+  margin-top: 8px;
+`;
+
+const CreatingText = styled.span`
+  font-size: 14px;
+  color: ${({ theme }) => theme.primaryText};
+  opacity: 0.7;
+  font-family: "Montserrat", sans-serif;
 `;
 
 export default withPrivateRoute(AiVideo);

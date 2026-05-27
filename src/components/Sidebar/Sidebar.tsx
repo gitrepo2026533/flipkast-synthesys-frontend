@@ -23,6 +23,7 @@ import { getCheckCloneVoiceLoading, getProfile } from "../../redux/reducers/prof
 import CircularProgress from "../Icons/CircularProgress";
 import { useEffect, useRef, useState } from "react";
 import ArrowDown from "../Icons/ArrowDown";
+import { AIVideoGenerationIcon } from "../Icons/AIVideoGenerationIcon";
 
 interface Props {
   mobile?: boolean;
@@ -63,14 +64,14 @@ const Sidebar = ({ mobile }: Props) => {
       link: "#",
       options: [{ id: "API Access", title: "API Access", link: pages.apiAccess() }],
     },
-    { id: 8, title: "Settings", icon: <SettingsIcon />, link: pages.settings() },
-    { id: 9, title: "Logout", icon: <LogoutIcon />, link: "" },
     {
-      id: 10,
+      id: 8,
       title: "AI Video Generation",
-      icon: <HomeIcon />,
+      icon: <AIVideoGenerationIcon />,
       link: "/ai-video",
     },
+    { id: 9, title: "Settings", icon: <SettingsIcon />, link: pages.settings() },
+    { id: 10, title: "Logout", icon: <LogoutIcon />, link: "" },
   ];
 
   const handleOpenPopup = () => {

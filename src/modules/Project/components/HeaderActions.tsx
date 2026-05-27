@@ -1,91 +1,64 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { HomeIcon } from "../../../components/Icons/HomeIcon";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getProject } from "../../../redux/reducers/projectReducer";
-import { mergeVideosProjectServer, updateVideoProjectServer } from "../../../redux/actions/projectAction";
+import {
+  getPreviewProjectServer,
+  getProjectSlideServer,
+  mergeVideosProjectServer,
+  updateVideoProjectServer,
+} from "../../../redux/actions/projectAction";
 import VideoModal from "./VideoModal";
+import Button, { ButtonThemes } from "../../../components/Button/Button";
+import Textfield, { TextfieldVariant } from "../../../components/Textfield/Textfield";
+import ThemeSwitcher from "../../../components/ThemeSwitcher/ThemeSwitcher";
+import { PlayIcon } from "../../../components/Icons/PlayIcon";
+import { EditIcon } from "../../../components/Icons/EditIcon";
+import { SaveIcon } from "../../../components/Icons/SaveIcon";
+import { CheckIcon } from "../../../components/Icons/CheckIcon";
+import PopupModel from "../../../components/PopupModel/PopupModel";
 
-const PencilIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path
-      d="M9.5 1.5L12.5 4.5L4.5 12.5H1.5V9.5L9.5 1.5Z"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+const processStatus: Record<number, string> = {
+  1: "pending",
+  2: "inprogress",
+  3: "completed",
+};
 
-const SaveIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path
-      d="M13 14H3C2.45 14 2 13.55 2 13V3C2 2.45 2.45 2 3 2H11L14 5V13C14 13.55 13.55 14 13 14Z"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M5 2V6H10V2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M4 9H12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    <path d="M4 11.5H9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
-
-const PlayIcon = () => (
-  <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
-    <path d="M1 1L11 7L1 13V1Z" fill="currentColor" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path
-      d="M2 7L5.5 10.5L12 3.5"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const HeaderActions = ({ credits }: any) => {
+const HeaderActions = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const projectData = useSelector(getProject);
   const dispatch = useDispatch();
+  const [currentStatus, setCurrentStatus] = useState("pending");
+  const [showPreviewPopup, setShowPreviewPopup] = useState(false);
+  const navigate = useNavigate();
 
-  const handleTitleDoubleClick = () => setIsEditing(true);
-
-  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "Escape") {
-      dispatch(
-        updateVideoProjectServer({
-          projectId: Number(projectData?.projectId),
-          title: editValue,
-          slides: [
-            {
-              slideId: Number(projectData?.slides?.[0]?.slideId),
-              order: 1,
-              slideBackgroundColor: "",
-              projectParagraphs: [],
-              audioPath: projectData?.slides?.[0]?.audioPath,
-            },
-          ],
-          status: 1,
-        }),
-      );
-      // dispatch(getProjectSlideServer(Number(projectData?.projectId)));
-      setIsEditing(false);
-    }
+  const handleTitleDoubleClick = () => {
+    setIsEditing(true);
+    setEditValue(projectData?.title || "");
   };
 
-  const onSaveProject = () => {
-    console.log("Save project");
+  const handleSaveTitle = () => {
+    if (!editValue || !editValue.trim()) return;
+    dispatch(
+      updateVideoProjectServer({
+        projectId: Number(projectData?.projectId),
+        title: editValue,
+        slides: [
+          {
+            slideId: Number(projectData?.slides?.[0]?.slideId),
+            order: 1,
+            slideBackgroundColor: "",
+            projectParagraphs: [],
+            audioPath: projectData?.slides?.[0]?.audioPath,
+          },
+        ],
+        status: 1,
+      }),
+    );
+    setIsEditing(false);
   };
 
   const onPreview = () => {
@@ -96,35 +69,67 @@ const HeaderActions = ({ credits }: any) => {
     setIsModalOpen(false);
   };
 
-  const onGenerate = () => {
-    dispatch(mergeVideosProjectServer(Number(projectData?.projectId)));
+  const onGenerate = async () => {
+    try {
+      const response: any = await dispatch(getPreviewProjectServer(Number(projectData?.projectId)));
+      const previewDataResponse = response?.payload?.data;
+
+      if (previewDataResponse?.succeeded === true) {
+        dispatch(mergeVideosProjectServer(Number(projectData?.projectId)));
+        setTimeout(() => {
+          dispatch(getProjectSlideServer(Number(projectData?.projectId), Number(projectData?.slides?.[0]?.slideId)));
+        }, 1500);
+      } else {
+        setShowPreviewPopup(true);
+      }
+    } catch (error) {
+      setShowPreviewPopup(true);
+    }
   };
 
-  const navigate = useNavigate();
+  useEffect(() => {
+    setCurrentStatus(processStatus[Number(projectData?.status)]);
+  }, [projectData]);
 
   return (
     <>
       <Bar>
-        <LeftSection>
-          <MenuButton onClick={() => navigate("/")} aria-label="Toggle menu">
-            <HomeIcon />
-          </MenuButton>
-          <Divider />
-        </LeftSection>
+        {/* LEFT — empty spacer to balance the grid */}
+        <LeftSection />
 
+        {/* CENTER — title + back button, truly centered */}
         <CenterSection>
           {isEditing ? (
-            <TitleInput
-              name="title"
-              autoFocus
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              // onBlur={handleTitleBlur}
-              onKeyDown={handleTitleKeyDown}
-            />
+            <TitleFieldWrapper>
+              <Textfield
+                name="title"
+                autoFocus
+                value={editValue}
+                placeholder="Enter project name"
+                variant={TextfieldVariant.project}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") handleSaveTitle();
+                  if (e.key === "Escape") setIsEditing(false);
+                }}
+                onBlur={() => {
+                  setIsEditing(false);
+                }}
+                endAdornment={
+                  <SaveAdornmentButton
+                    onClick={handleSaveTitle}
+                    aria-label="Save title"
+                    title="Save (Enter)"
+                    type="button"
+                  >
+                    <SaveIcon />
+                  </SaveAdornmentButton>
+                }
+              />
+            </TitleFieldWrapper>
           ) : (
             <TitleGroup onDoubleClick={handleTitleDoubleClick}>
-              <TitleText>{projectData?.title}</TitleText>
+              <TitleText>{editValue ? editValue : projectData?.title}</TitleText>
               <EditButton
                 onClick={() => {
                   setIsEditing(true);
@@ -132,107 +137,135 @@ const HeaderActions = ({ credits }: any) => {
                 }}
                 aria-label="Edit title"
               >
-                <PencilIcon />
+                <EditIcon />
               </EditButton>
             </TitleGroup>
           )}
+
+          <Button
+            buttonTheme={ButtonThemes.Secondary}
+            icon={<img src="/images/arrow-left.svg" />}
+            style={{ position: "relative", zIndex: "100" }}
+            text="Back"
+            onClick={() => navigate("/ai-video")}
+          />
         </CenterSection>
 
+        {/* RIGHT — status + action buttons */}
         <RightSection>
-          <SaveButton onClick={onSaveProject} aria-label="Save project">
-            <SaveIcon />
-            <span>Save Project</span>
-          </SaveButton>
+          <StatusBadge status={currentStatus}>{currentStatus}</StatusBadge>
 
-          <PreviewButton onClick={onPreview} aria-label="Preview">
-            <PlayIcon />
-            <span>Preview</span>
-          </PreviewButton>
+          <Button
+            text="Preview"
+            icon={<PlayIcon />}
+            onClick={onPreview}
+            disabled={currentStatus === "pending" || currentStatus === "inprogress" || projectData?.output === null}
+            buttonTheme={ButtonThemes.Primary}
+            style={{
+              height: "40px",
+              padding: "0 14px",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: "500",
+              borderRadius: "8px",
+              width: "auto",
+              minWidth: "90px",
+            }}
+          />
 
-          <GenerateButton onClick={onGenerate} aria-label="Generate">
-            <CheckIcon />
-            <span>Generate</span>
-          </GenerateButton>
+          <Button
+            text="Generate"
+            icon={<CheckIcon />}
+            onClick={onGenerate}
+            disabled={Number(projectData?.status) === 2 || Number(projectData?.status) === 3}
+            buttonTheme={ButtonThemes.Outline}
+            style={{
+              height: "40px",
+              padding: "0 14px",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: "500",
+              borderRadius: "8px",
+              width: "auto",
+              minWidth: "100px",
+            }}
+          />
 
-          <CreditsText>{credits ? credits : 0} credits</CreditsText>
+          <ThemeSwitcher />
         </RightSection>
+
+        <PopupModel
+          open={showPreviewPopup}
+          title="Cannot Generate Video"
+          description="All slides are currently inactive or video is not locked. Please activate at least one slide and lock a video before generating the video."
+          confirmText={"Ok"}
+          cancelText="Cancel"
+          onClose={() => setShowPreviewPopup(false)}
+          onConfirm={() => setShowPreviewPopup(false)}
+        />
       </Bar>
 
-      <VideoModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        videoSrc="http://192.168.1.80:7132/Videos/8356e72c-eb9e-44a2-87d6-af5270404503.mp4"
-        projectId={Number(projectData?.projectId)}
-      />
+      <VideoModal isOpen={isModalOpen} onClose={closeModal} videoPath={projectData?.output || ""} />
     </>
   );
 };
 
+// ─── Styles ────────────────────────────────────────────────────────────────────
+
 const Bar = styled.header`
   width: 100%;
-  height: 48px;
+  height: 55px;
   min-height: 0;
-  display: flex;
+  /* 3-column grid: left spacer | center | right actions */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   flex-shrink: 0;
   background-color: ${({ theme }) => theme.primaryBackground};
-  padding: 0 12px 0 0;
+  padding: 0 12px;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
   z-index: 100;
-  border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-bottom: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
 
   @media (max-width: 768px) {
-    min-height: 48px;
     height: auto;
-    flex-wrap: wrap;
-    // justify-content: space-between;
-    // padding: 0 12px 8px;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
     padding-bottom: 8px;
   }
 `;
 
+/* Invisible spacer — mirrors RightSection's width so CenterSection stays truly centered */
 const LeftSection = styled.div`
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-`;
-
-const MenuButton = styled.button`
-  all: unset;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  color: ${({ theme }) => theme.primaryText};
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    opacity: 1;
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
-const Divider = styled.div`
-  width: 1px;
-  height: 24px;
-  background: ${({ theme }) => theme.editorLineBorder};
-  flex-shrink: 0;
-`;
-
 const CenterSection = styled.div`
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 15px;
 
   @media (max-width: 768px) {
-    order: 3;
     width: 100%;
     justify-content: center;
+    padding: 8px 0;
+  }
+`;
+
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-end;
     padding: 8px 0;
   }
 `;
@@ -268,97 +301,132 @@ const EditButton = styled.button`
   }
 `;
 
-const TitleInput = styled.input`
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid ${({ theme }) => theme.activeMenu};
-  outline: none;
-  font-family: "Montserrat", sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.primaryText};
-  text-align: center;
-  padding: 2px 6px;
-  min-width: 160px;
-`;
-
-const RightSection = styled.div`
+const TitleFieldWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 
-  @media (max-width: 768px) {
-    order: 2;
-    width: 100%;
-    justify-content: flex-end;
-    padding: 8px 0;
+  input {
+    padding: 6px 36px 6px 12px !important;
+    width: 220px !important;
+    min-width: 180px;
+    height: 36px !important;
+    max-height: unset !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: normal !important;
+    box-shadow: ${({ theme }) => theme.inputShadow} !important;
+    background-color: ${({ theme }) => theme.primaryBackground} !important;
+    color: ${({ theme }) => theme.primaryText} !important;
+    border: 1px solid ${({ theme }) => theme.chatTextfieldBorder} !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+
+    &::placeholder {
+      font-weight: 400 !important;
+      font-size: 12px !important;
+      opacity: 0.4;
+    }
+  }
+
+  & > div {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  & > div > div:last-child {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: all;
   }
 `;
 
-const BaseButton = styled.button`
+const SaveAdornmentButton = styled.button`
   all: unset;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.activeMenu};
+  opacity: 0.7;
   transition: opacity 0.15s ease, transform 0.1s ease;
-  white-space: nowrap;
-
-  &:active {
-    transform: scale(0.97);
-  }
-`;
-
-const SaveButton = styled(BaseButton)`
-  background: ${({ theme }) => theme.editorDropDownContent};
-  color: ${({ theme }) => theme.primaryText};
-  border: 1px solid ${({ theme }) => theme.editorLineBorder};
-  opacity: 0.95;
 
   svg {
-    color: ${({ theme }) => theme.primaryText};
+    width: 20px;
+    height: 20px;
   }
 
   &:hover {
     opacity: 1;
+    transform: scale(1.15);
+  }
+
+  &:active {
+    transform: scale(0.9);
   }
 `;
 
-const PreviewButton = styled(BaseButton)`
-  background: ${({ theme }) => theme.activeMenu};
-  color: #ffffff;
-  box-shadow: ${({ theme }) => theme.buttonShadow};
-
-  &:hover {
-    opacity: 0.95;
-  }
-`;
-
-const GenerateButton = styled(BaseButton)`
-  background: ${({ theme }) => theme.editorDropDownContent};
-  color: ${({ theme }) => theme.primaryText};
-  border: 1px solid ${({ theme }) => theme.activeMenu};
-
-  &:hover {
-    background: ${({ theme }) => theme.editorDropDownContent};
-    opacity: 1;
-  }
-`;
-
-const CreditsText = styled.span`
+const StatusBadge = styled.div<{ status?: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 999px;
   font-family: "Montserrat", sans-serif;
   font-size: 11px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.primaryText};
-  opacity: 0.4;
-  padding-left: 4px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+
+  background: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "rgba(255, 159, 10, 0.12)";
+      case "inprogress":
+        return "rgba(0, 122, 255, 0.12)";
+      case "completed":
+        return "rgba(52, 199, 89, 0.12)";
+      default:
+        return "rgba(140,140,140,0.12)";
+    }
+  }};
+
+  color: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "#FF9F0A";
+      case "inprogress":
+        return "#007AFF";
+      case "completed":
+        return "#34C759";
+      default:
+        return "#999999";
+    }
+  }};
+
+  border-color: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "rgba(255, 159, 10, 0.25)";
+      case "inprogress":
+        return "rgba(0, 122, 255, 0.25)";
+      case "completed":
+        return "rgba(52, 199, 89, 0.25)";
+      default:
+        return "rgba(140,140,140,0.2)";
+    }
+  }};
 `;
 
 export default HeaderActions;

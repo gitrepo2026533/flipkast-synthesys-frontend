@@ -49,6 +49,7 @@ export interface Project {
   subTitle?: string;
   paragraphs: Paragraphs[];
   slides?: Slide[];
+  status?: string;
 }
 
 export interface ProjectList {

@@ -7,44 +7,11 @@ import { useParams } from "react-router-dom";
 import { updateVideoProjectServer, getProjectSlideServer, lockVideoProjectServer } from "../../../redux/actions/projectAction";
 import { useDispatch, useSelector } from "react-redux";
 import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
-
-const CloseIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const VideoThumbIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <rect x="1" y="3" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-    <path d="M11 6.2L15 4V12L11 9.8V6.2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-  </svg>
-);
-
-const AiAvatarIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <rect width="16" height="16" rx="8" fill="url(#aigrad)" />
-    <path d="M5 8.5L7 10.5L11 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    <defs>
-      <linearGradient id="aigrad" x1="0" y1="0" x2="16" y2="16">
-        <stop stopColor="#0063B4" />
-        <stop offset="1" stopColor="#009AF7" />
-      </linearGradient>
-    </defs>
-  </svg>
-);
-// Image expand icon
-const ExpandIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-    <path
-      d="M1 4.5V1H4.5M7.5 1H11V4.5M11 7.5V11H7.5M4.5 11H1V7.5"
-      stroke="currentColor"
-      strokeWidth="1.3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+import CloseIcon from "../../../components/Icons/CloseIcon";
+import { VideoThumbIcon } from "../../../components/Icons/VideoThumbIcon";
+import { ExpandIcon } from "../../../components/Icons/ExpandIcon";
+import { AiAvatarIcon } from "../../../components/Icons/AiAvatarIcon";
+import PopupModel from "../../../components/PopupModel/PopupModel";
 
 interface Paragraph {
   projectParagraphId: number;
@@ -52,6 +19,7 @@ interface Paragraph {
   outputAudio: string;
   imagePaths?: string[];
   errorMessage?: string;
+  outputVideo?: string;
 }
 
 const LeftPanelSide = () => {
@@ -73,20 +41,6 @@ const LeftPanelSide = () => {
 
   const paragraphs: Paragraph[] = slideData?.projectParagraphs;
 
-  useEffect(() => {
-    if (isDraftSlide && draftSlideData?.slideId === 0) {
-      setSlideData(draftSlideData);
-      return;
-    }
-    if (projectData?.slides?.length) {
-      setSlideData(projectData.slides[0]);
-    }
-  }, [projectData, draftSlideData, isDraftSlide]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [paragraphs, isTyping]);
-
   const handleSend = async () => {
     if (!prompt.trim()) return;
     setAttachedFiles([]);
@@ -94,6 +48,7 @@ const LeftPanelSide = () => {
     setSelectedModel(models[0]);
     dispatch(
       updateVideoProjectServer({
+        title: projectData?.title,
         projectId: Number(projectId),
         slides: [
           {
@@ -123,15 +78,15 @@ const LeftPanelSide = () => {
 
   const handleConfirmLock = () => {
     if (!pendingVideo) return;
-    setShowLockModal(false);
-    setPendingVideo(null);
     dispatch(lockVideoProjectServer({
       projectId: Number(projectId),
       slideId: Number(slideData.slideId),
-      ParagraphId: Number(slideData.projectParagraphs[pendingVideo.idx].projectParagraphId),
+      ParagraphId: Number(pendingVideo?.paragraphId),
     }));
     dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId),
     ));
+    setShowLockModal(false);
+    setPendingVideo(null);
   };
 
   const handleCancelLock = () => {
@@ -139,13 +94,30 @@ const LeftPanelSide = () => {
     setPendingVideo(null);
   };
 
+  useEffect(() => {
+    if (isDraftSlide && draftSlideData?.slideId === 0) {
+      setSlideData(draftSlideData);
+      return;
+    }
+    if (projectData?.slides?.length) {
+      setSlideData(projectData.slides[0]);
+    }
+  }, [projectData, draftSlideData, isDraftSlide]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [paragraphs, isTyping]);
+
   return (
     <LeftPanel>
       {/* ── Top Header ── */}
       <LeftHeader>
         <HeaderTitle>{slideData.slideId}</HeaderTitle>
-        <HeaderActions>
-        </HeaderActions>
+        {/* <HeaderActions>
+        </HeaderActions> */}
+        <SlideStatusBadge $active={slideData?.isActive}>
+          {slideData.slideId === 0 ? "Draft" : slideData?.isActive ? "Active" : "Inactive"}
+        </SlideStatusBadge>
       </LeftHeader>
 
       <PanelBody>
@@ -242,7 +214,6 @@ const LeftPanelSide = () => {
             </ChatMessages>
           </ChatColumn>
 
-          {/* ── Videos Column ── */}
           <VideoSection $visible={videoSectionVisible}>
             <PanelHeader>
               <SectionLabel>
@@ -260,32 +231,34 @@ const LeftPanelSide = () => {
               {videoParagraphs?.length === 0 ? (
                 <EmptyState>No videos generated yet. Send a prompt to create videos.</EmptyState>
               ) : (
-                paragraphs?.map((para, idx) => {
+                videoParagraphs?.map((para, idx) => {
                   return (
                     <VideoCard
                       key={`${slideData.id}-vid-${idx}`}
                       $active={para?.projectParagraphId === slideData?.projectParagraphId}
                       onClick={() => {
                         setPendingVideo({
-                          idx,
+                          paragraphId: para.projectParagraphId,
                           path: para.outputAudio,
                         });
                         setShowLockModal(true);
                       }}
                     >
-                      <VideoCardIcon>
-                        <VideoThumbIcon />
-                      </VideoCardIcon>
+                      <VideoPreview
+                        src={`http://192.168.1.80:7132/${para.outputAudio}`}
+                        muted
+                        preload="metadata"
+                        playsInline
+                        onMouseEnter={(e) => e.currentTarget.play()}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.pause();
+                          e.currentTarget.currentTime = 0;
+                        }}
+                      />
 
-                      <VideoCardInfo>
+                      <VideoOverlay>
                         <VideoCardTitle>Video {idx + 1}</VideoCardTitle>
-                        <VideoCardPrompt>{para.text}</VideoCardPrompt>
-                        <VideoCardMeta>
-                          {/* <StatusPill $status="done">Done</StatusPill>
-                          <VideoCardFileName>{para?.outputAudio ? para.outputAudio.split("/").pop() : null}</VideoCardFileName> */}
-
-                        </VideoCardMeta>
-                      </VideoCardInfo>
+                      </VideoOverlay>
                     </VideoCard>
                   );
                 })
@@ -293,23 +266,61 @@ const LeftPanelSide = () => {
             </VideoList>
           </VideoSection>
 
-          {showLockModal && (
+          {/* {showLockModal && (
             <ModalOverlay>
               <ModalCard>
-                <ModalTitle>Lock this video?</ModalTitle>
+                <ModalTitle>
+                  {Number(projectData?.status) === 2
+                    ? "Stop current generation?"
+                    : Number(projectData?.status) === 3
+                      ? "Discard preview changes?"
+                      : "Lock this video?"}
+                </ModalTitle>
 
                 <ModalText>
-                  This video will be attached to the current slide and won’t be replaced automatically.
+                  {Number(projectData?.status) === 2
+                    ? "A video generation process is currently running. Locking this video will stop the current generation process and attach this selected video to the slide. Do you want to continue?"
+                    : Number(projectData?.status) === 3
+                      ? "The current preview changes will be discarded and this selected video will be attached to the slide. Do you want to continue?"
+                      : "This video will be attached to the current slide and won’t be replaced automatically."}
                 </ModalText>
 
                 <ModalActions>
                   <CancelBtn onClick={handleCancelLock}>Cancel</CancelBtn>
 
-                  <ConfirmBtn onClick={handleConfirmLock}>Lock Video</ConfirmBtn>
+                  <ConfirmBtn onClick={handleConfirmLock}>
+                    {Number(projectData?.status) === 2
+                      ? "Stop & Lock Video"
+                      : Number(projectData?.status) === 3
+                        ? "Discard & Lock Video"
+                        : "Lock Video"}
+                  </ConfirmBtn>
                 </ModalActions>
               </ModalCard>
             </ModalOverlay>
-          )}
+          )} */}
+
+          <PopupModel
+            open={showLockModal}
+            title={Number(projectData?.status) === 2
+              ? "Stop current generation?"
+              : Number(projectData?.status) === 3
+                ? "Discard preview changes?"
+                : "Lock this video?"}
+            description={Number(projectData?.status) === 2
+              ? "A video generation process is currently running. Locking this video will stop the current generation process and attach this selected video to the slide. Do you want to continue?"
+              : Number(projectData?.status) === 3
+                ? "The current preview changes will be discarded and this selected video will be attached to the slide. Do you want to continue?"
+                : "This video will be attached to the current slide and won’t be replaced automatically."}
+            confirmText={Number(projectData?.status) === 2
+              ? "Stop & Lock Video"
+              : Number(projectData?.status) === 3
+                ? "Discard & Lock Video"
+                : "Lock Video"}
+            cancelText="Cancel"
+            onClose={handleCancelLock}
+            onConfirm={handleConfirmLock}
+          />
 
           {/* Toggle tab when video section is hidden */}
           {!videoSectionVisible && (
@@ -363,7 +374,7 @@ const LeftPanelSide = () => {
   );
 };
 
-/* ─────────────────────────── Animations ─────────────────────────── */
+// Style
 
 const bounce = keyframes`
   0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
@@ -374,18 +385,6 @@ const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 `;
-
-
-const rotate = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-/* ─────────────────────────── Layout ─────────────────────────── */
 
 const LeftPanel = styled.div`
   flex: 0 0 40%;
@@ -399,7 +398,7 @@ const LeftPanel = styled.div`
   min-height: 0;
 
   background-color: ${({ theme }) => theme.primaryBackground};
-  border-right: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-right: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   flex-shrink: 0;
   position: relative;
 
@@ -416,7 +415,7 @@ const LeftPanel = styled.div`
     height: auto;
 
     border-right: none;
-    border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+    border-bottom: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
     overflow: visible;
   }
 `;
@@ -426,7 +425,7 @@ const LeftHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 14px 14px 13px;
-  border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-bottom: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   flex-shrink: 0;
   gap: 10px;
 `;
@@ -441,13 +440,6 @@ const HeaderTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`;
-
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
 `;
 
 const VideoHeaderActions = styled.div`
@@ -469,14 +461,12 @@ const ActionBtn = styled.button`
   color: ${({ theme }) => theme.primaryText};
   opacity: 0.55;
   transition: opacity 0.15s, background 0.15s;
-
   &:hover {
     opacity: 1;
     background: rgba(128, 128, 128, 0.1);
   }
 `;
 
-/* PanelBody fills remaining height, never overflows */
 const PanelBody = styled.div`
   display: flex;
   flex-direction: column;
@@ -500,7 +490,6 @@ const ChatSection = styled.div`
   }
 `;
 
-/* ── Chat column takes remaining width ── */
 const ChatColumn = styled.div`
   flex: 1;
   display: flex;
@@ -517,7 +506,7 @@ const PanelHeader = styled.div`
   max-height: 50px;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-bottom: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   flex-shrink: 0;
   background: ${({ theme }) => theme.primaryBackground};
 `;
@@ -534,33 +523,25 @@ const SectionLabel = styled.div`
   color: ${({ theme }) => theme.editorFileUpload};
 `;
 
-/* Scrollable chat — occupies all remaining space in ChatColumn */
 const ChatMessages = styled.div`
   flex: 1;
   min-height: 0;
   height: 100%;
-
   overflow-y: auto;
   overflow-x: hidden;
-
   padding: 12px 14px 8px;
-
   display: flex;
   flex-direction: column;
   gap: 12px;
-
   scroll-behavior: smooth;
-
   &::-webkit-scrollbar {
     width: 5px;
   }
-
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-
   &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.editorLineBorder};
+    background: ${({ theme }) => theme.chatTextfieldBorder};
     border-radius: 20px;
   }
 `;
@@ -600,11 +581,8 @@ const MessageBubble = styled.div<{ $role: "user" | "ai" }>`
   max-width: 60%;
   padding: 9px 12px 6px;
   border-radius: ${({ $role }) => ($role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px")};
-  background: ${({ $role, theme }) =>
-    $role === "user"
-      ? theme.button
-      : theme.messageBackground ?? (theme.primaryBackground === "#F0F0F3" ? "#EAEAED" : "#232528")};
-  box-shadow: ${({ $role, theme }) => ($role === "user" ? theme.buttonShadow : "none")};
+  background: ${({ $role, theme }) => theme.messageBackground};
+  // box-shadow: ${({ $role, theme }) => ($role === "user" ? theme.buttonShadow : "none")};
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -634,7 +612,7 @@ const BubbleText = styled.p`
   font-family: "Montserrat", sans-serif;
   font-size: 12px;
   line-height: 1.55;
-  color: ${({ theme }) => theme.primaryText};
+  color: ${({ theme }) => theme.chatText};
   word-break: break-word;
 `;
 
@@ -646,7 +624,6 @@ const Timestamp = styled.span`
   align-self: flex-end;
 `;
 
-/* ── Image attachments in chat ── */
 const ImageGrid = styled.div<{ $count: number }>`
   display: grid;
   grid-template-columns: ${({ $count }) => ($count === 1 ? "1fr" : $count === 2 ? "1fr 1fr" : "1fr 1fr 1fr")};
@@ -693,7 +670,6 @@ const ImageOverlay = styled.div`
   border-radius: 6px;
 `;
 
-/* ── Lightbox ── */
 const Lightbox = styled.div`
   position: absolute;
   inset: 0;
@@ -728,13 +704,11 @@ const LightboxClose = styled.button`
   justify-content: center;
   color: white;
   transition: background 0.15s;
-
   &:hover {
     background: rgba(255, 255, 255, 0.22);
   }
 `;
 
-/* ── Typing indicator ── */
 const TypingDots = styled.div`
   display: flex;
   align-items: center;
@@ -751,43 +725,33 @@ const Dot = styled.span<{ $delay: string }>`
   animation-delay: ${({ $delay }) => $delay};
 `;
 
-/* ── Input bar ── */
 const InputArea = styled.div`
   padding: 10px 12px 12px;
   flex-shrink: 0;
-  border-top: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-top: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
 `;
 
-/* ── Video section (collapsible) ── */
 const VideoSection = styled.div<{ $visible: boolean }>`
   flex: 0 0 ${({ $visible }) => ($visible ? "32%" : "0%")};
   display: flex;
   flex-direction: column;
-
   min-height: 0;
   overflow: hidden;
-
-  border-left: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.editorLineBorder}` : "none")};
-
+  border-left: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.chatTextfieldBorder}` : "none")};
   min-width: ${({ $visible }) => ($visible ? "180px" : "0")};
-
   transition: flex 0.22s ease, min-width 0.22s ease;
 
   @media (max-width: 768px) {
     width: 100%;
     flex: none;
-
     height: ${({ $visible }) => ($visible ? "260px" : "0")};
     min-width: 100%;
-
     border-left: none;
-    border-top: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.editorLineBorder}` : "none")};
-
+    border-top: ${({ $visible, theme }) => ($visible ? `1px solid ${theme.chatTextfieldBorder}` : "none")};
     transition: height 0.22s ease;
   }
 `;
 
-/* Scrollable video list */
 const VideoList = styled.div`
   display: flex;
   flex-direction: column;
@@ -797,7 +761,6 @@ const VideoList = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px 10px 12px;
-
   &::-webkit-scrollbar {
     width: 4px;
   }
@@ -805,132 +768,59 @@ const VideoList = styled.div`
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.editorLineBorder};
+    background: ${({ theme }) => theme.chatTextfieldBorder};
     border-radius: 4px;
-  }
-`;
-
-/* Slim tab shown when video section is hidden */
-const VideoToggleTab = styled.button`
-  all: unset;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 28px;
-  flex-shrink: 0;
-  border-left: 1px solid ${({ theme }) => theme.editorLineBorder};
-  background: transparent;
-  color: ${({ theme }) => theme.editorFileUpload};
-  opacity: 0.7;
-  transition: opacity 0.15s, background 0.15s;
-  padding: 12px 0;
-
-  &:hover {
-    opacity: 1;
-    background: rgba(128, 128, 128, 0.06);
   }
 `;
 
 const VideoCard = styled.button<{ $active: boolean }>`
   all: unset;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.activeMenu : theme.editorLineBorder)};
-  background: ${({ $active, theme }) =>
-    $active
-      ? theme.primaryBackground === "#F0F0F3"
-        ? "rgba(0,154,247,0.06)"
-        : "rgba(0,154,247,0.08)"
-      : "transparent"};
-  transition: border-color 0.15s, background 0.15s;
-
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 110px;
+  border-radius: 14px;
+  border: 2px solid
+    ${({ $active, theme }) =>
+    $active ? theme.activeMenu : "transparent"};
+  background: #000;
+  transition: all 0.2s ease;
   &:hover {
-    border-color: ${({ theme }) => theme.activeMenu};
+    transform: translateY(-2px);
   }
 `;
 
-const VideoCardIcon = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: ${({ theme }) =>
-    theme.primaryBackground === "#F0F0F3" ? "rgba(0,154,247,0.08)" : "rgba(0,154,247,0.12)"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.activeMenu};
-  flex-shrink: 0;
+const VideoPreview = styled.video`
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+  background: #000;
 `;
 
-const VideoCardInfo = styled.div`
-  flex: 1;
-  min-width: 0;
+const VideoOverlay = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.75),
+    rgba(0, 0, 0, 0)
+  );
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: flex-end;
 `;
 
 const VideoCardTitle = styled.p`
   margin: 0;
   font-family: "Montserrat", sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: ${({ theme }) => theme.primaryText};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const VideoCardPrompt = styled.p`
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: 9.5px;
-  color: ${({ theme }) => theme.editorFileUpload};
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  line-height: 1.4;
-`;
-
-const VideoCardMeta = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-`;
-
-const StatusPill = styled.span<{ $status: string }>`
-  font-family: "Montserrat", sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 20px;
-  background: ${({ $status }) =>
-    $status === "done"
-      ? "rgba(49,223,202,0.15)"
-      : $status === "generating"
-        ? "rgba(255,140,0,0.15)"
-        : "rgba(255,108,118,0.15)"};
-  color: ${({ $status }) => ($status === "done" ? "#31DFCA" : $status === "generating" ? "#FF8C00" : "#FF6C76")};
-`;
-
-const VideoCardFileName = styled.span`
-  font-family: "Montserrat", sans-serif;
-  font-size: 9px;
-  color: ${({ theme }) => theme.editorFileUpload};
-  opacity: 0.7;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 `;
 
 const ModalOverlay = styled.div`
@@ -949,7 +839,7 @@ const ModalCard = styled.div`
   padding: 20px;
   border-radius: 16px;
   background: ${({ theme }) => theme.primaryBackground};
-  border: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 `;
 
@@ -995,7 +885,6 @@ const ModalButton = styled.button`
 const CancelBtn = styled(ModalButton)`
   background: ${({ theme }) => theme.editorDropDownContent};
   color: ${({ theme }) => theme.primaryText};
-
   &:hover {
     opacity: 0.9;
   }
@@ -1034,53 +923,26 @@ const ErrorMessage = styled.div`
   line-height: 1.5;
 `;
 
-const RetryButton = styled.button`
-  margin-top: 10px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #ff4d4f;
-  color: white;
-  font-size: 12px;
-  cursor: pointer;
-  transition: 0.2s;
-
-  &:hover {
-    background: #ff7875;
-  }
-`;
-
 const VideoToggleTabDesktop = styled.button`
   all: unset;
   cursor: pointer;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   gap: 6px;
-
   width: 28px;
   flex-shrink: 0;
-
-  border-left: 1px solid ${({ theme }) => theme.editorLineBorder};
-
+  border-left: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   background: transparent;
-
   color: ${({ theme }) => theme.editorFileUpload};
-
   opacity: 0.7;
-
   transition: opacity 0.15s, background 0.15s;
-
   padding: 12px 0;
-
   &:hover {
     opacity: 1;
     background: rgba(128, 128, 128, 0.06);
   }
-
   @media (max-width: 768px) {
     display: none;
   }
@@ -1092,64 +954,54 @@ const VideoToggleLabel = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-
   writing-mode: vertical-rl;
   transform: rotate(180deg);
 `;
 
 const FloatingVideoButton = styled.button`
   display: none;
-
   @media (max-width: 768px) {
     all: unset;
-
     position: fixed;
     right: 14px;
     bottom: 90px;
     z-index: 9999;
-
     display: flex;
     align-items: center;
     gap: 8px;
-
     padding: 10px 14px;
     border-radius: 999px;
-
     cursor: pointer;
-
     background: ${({ theme }) =>
     theme.primaryBackground === "#F0F0F3" ? "rgba(255,255,255,0.95)" : "rgba(24,24,28,0.95)"};
-
-    border: 1px solid ${({ theme }) => theme.editorLineBorder};
-
+    border: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
     color: ${({ theme }) => theme.primaryText};
-
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-
     backdrop-filter: blur(10px);
   }
 `;
 
-const PanelLoaderWrapper = styled.div`
-  width: 100%;
-  height: 100%;
+const SlideStatusBadge = styled.div<{ $active?: boolean }>`
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: ${({ $active }) =>
+    $active
+      ? "rgba(52, 199, 89, 0.12)"
+      : "rgba(255, 77, 79, 0.12)"};
 
-  background: ${({ theme }) => theme.primaryBackground};
+  color: ${({ $active }) =>
+    $active ? "#34C759" : "#FF4D4F"};
+
+  border: 1px solid
+    ${({ $active }) =>
+    $active
+      ? "rgba(52, 199, 89, 0.3)"
+      : "rgba(255, 77, 79, 0.3)"};
 `;
 
-const PanelSpinner = styled.div`
-  width: 38px;
-  height: 38px;
-
-  border-radius: 50%;
-
-  border: 3px solid rgba(120, 120, 120, 0.2);
-  border-top-color: ${({ theme }) => theme.activeMenu};
-
-  animation: ${rotate} 0.8s linear infinite;
-`;
 export default LeftPanelSide;

@@ -59,12 +59,12 @@ const Project = () => {
           <PageLayout>
             <LeftSideProfileSection />
             <LeftPanelSide
-              // isDraftSlide={isDraftslide}
-              // setIsDraftSlide={setIsDraftSlide}
+            // isDraftSlide={isDraftslide}
+            // setIsDraftSlide={setIsDraftSlide}
             />
             <RightPanelSide
-              // isDraftSlide={isDraftslide}
-              // setIsDraftSlide={setIsDraftSlide}
+            // isDraftSlide={isDraftslide}
+            // setIsDraftSlide={setIsDraftSlide}
             // currentSlides={currentSlides}
             // setCurrentSlides={setCurrentSlides}
             // slides={slides}
@@ -78,6 +78,8 @@ const Project = () => {
 };
 
 export default withPrivateRoute(Project);
+
+// Style
 
 const Wrapper = styled.div`
   width: 100%;
@@ -118,4 +120,7 @@ const LoaderWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
 `;

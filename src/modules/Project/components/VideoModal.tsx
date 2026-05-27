@@ -1,67 +1,41 @@
-import { useDispatch, useSelector } from "react-redux";
-import React, { useEffect, useState, useRef } from "react";
+import { useSelector } from "react-redux";
+import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import { getProjectPreview } from "../../../redux/reducers/projectReducer";
-import { getPreviewProjectServer } from "../../../redux/actions/projectAction";
-
 interface VideoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  videoSrc: string;
-  projectId: number;
+  videoPath: string;
 }
 
-const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, projectId }) => {
-  const dispatch = useDispatch();
+const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videoPath }) => {
   const projectVideos = useSelector(getProjectPreview);
   const [currentIndex, setCurrentIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
-  // fetch project videos when modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-    dispatch(getPreviewProjectServer(projectId));
-    setCurrentIndex(0);
-  }, [isOpen, projectId, dispatch]);
-
-  // play the current video automatically when index changes
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.load();
-      videoRef.current.play().catch(() => console.log("Autoplay failed"));
-    }
-  }, [currentIndex]);
-
-  console.log("Project videos:", projectVideos);
 
   if (!isOpen) return null;
 
+  if (!videoPath) return null;
+
   const handleEnded = () => {
-    if (currentIndex < projectVideos.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      onClose();
-    }
+    onClose();
   };
 
   return (
     <Overlay onClick={onClose}>
       <Content onClick={(e) => e.stopPropagation()}>
         <CloseButton onClick={onClose}>&times;</CloseButton>
-
-        {projectVideos.length > 0 ? (
-          <Video ref={videoRef} controls autoPlay onEnded={handleEnded}>
-            <source src={`http://192.168.1.80:7132${projectVideos[currentIndex]}`} type="video/mp4" />
-            Your browser does not support HTML5 video.
-          </Video>
-        ) : (
-          <p>Loading videos...</p>
-        )}
+        <Video ref={videoRef} controls autoPlay onEnded={handleEnded}>
+          <source src={`http://192.168.1.80:7132/${videoPath}`} type="video/mp4" />
+          Your browser does not support HTML5 video.
+        </Video>
       </Content>
     </Overlay>
   );
 };
 
-// ─── Styled Components ─────────────────────────────────
+// Style
+
 const Overlay = styled.div`
   position: fixed;
   top: 0;

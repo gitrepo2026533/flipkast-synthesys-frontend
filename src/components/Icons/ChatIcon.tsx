@@ -6,6 +6,7 @@ export const ChatIcon = () => (
       strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
+      fill="currentColor"
     />
     <path
       d="M12 13.125C12.6213 13.125 13.125 12.6213 13.125 12C13.125 11.3787 12.6213 10.875 12 10.875C11.3787 10.875 10.875 11.3787 10.875 12C10.875 12.6213 11.3787 13.125 12 13.125Z"

@@ -1,29 +1,7 @@
 import { useState } from "react";
 import styled from "styled-components";
-
-const AvatarsIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="6" r="3.5" stroke="currentColor" strokeWidth="1.5" />
-    <path
-      d="M3 17.5C3 13.91 6.13 11 10 11C13.87 11 17 13.91 17 17.5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const ScriptIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <rect x="4" y="2.5" width="12" height="15" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M7 7H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7 13H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
+import { ChatIcon } from "../../../components/Icons/ChatIcon";
 export type SidebarItemKey = "avatars" | "chat";
-
 interface SidebarItem {
   key: SidebarItemKey;
   label: string;
@@ -34,12 +12,7 @@ interface LeftSideProfileSectionProps {
   activeItem?: SidebarItemKey;
   onItemClick?: (key: SidebarItemKey) => void;
 }
-const SIDEBAR_ITEMS: SidebarItem[] = [
-  { key: "avatars", label: "Avatars", icon: <AvatarsIcon /> },
-  { key: "chat", label: "Script", icon: <ScriptIcon /> },
-];
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const SIDEBAR_ITEMS: SidebarItem[] = [{ key: "chat", label: "chat", icon: <ChatIcon /> }];
 
 const LeftSideProfileSection = ({ activeItem: controlledActive, onItemClick }: LeftSideProfileSectionProps) => {
   const [internalActive, setInternalActive] = useState<SidebarItemKey>("chat");
@@ -69,7 +42,7 @@ const LeftSideProfileSection = ({ activeItem: controlledActive, onItemClick }: L
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// Style
 
 const Sidebar = styled.nav`
   width: 70px;
@@ -81,7 +54,7 @@ const Sidebar = styled.nav`
   gap: 2px;
   padding: 12px 6px;
   background-color: ${({ theme }) => theme.primaryBackground};
-  border-right: 1px solid ${({ theme }) => theme.editorLineBorder};
+  border-right: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
   box-sizing: border-box;
   flex-shrink: 0;
   min-height: 0;
@@ -95,7 +68,7 @@ const Sidebar = styled.nav`
     justify-content: space-around;
 
     border-right: none;
-    border-bottom: 1px solid ${({ theme }) => theme.editorLineBorder};
+    border-bottom: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
 
     overflow-x: auto;
     overflow-y: hidden;
@@ -116,8 +89,8 @@ const NavItem = styled.button<{ $active: boolean }>`
   transition: background 0.15s ease, opacity 0.15s ease;
   position: relative;
 
-  background: ${({ $active, theme }) => ($active ? theme.editorDropDownContent : "transparent")};
-  box-shadow: ${({ $active, theme }) => ($active ? theme.cardShadow : "none")};
+  background: ${({ $active, theme }) => theme.editorDropDownContent};
+  box-shadow: ${({ $active, theme }) => theme.cardShadow};
 
   &:hover {
     background: ${({ theme }) => theme.editorDropDownContent};

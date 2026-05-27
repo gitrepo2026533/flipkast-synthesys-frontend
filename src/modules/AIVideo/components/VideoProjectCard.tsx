@@ -1,29 +1,73 @@
 /* eslint-disable prettier/prettier */
+import { useRef } from "react";
 import styled from "styled-components";
 
 interface ProjectCardProps {
   title: string;
   description?: string;
   image?: string;
+  preViewVideo?: string;
   onClick?: () => void;
 }
 
 const VideoProjectCard = ({
   title,
-  // description,
+  preViewVideo,
   image,
   onClick,
 }: ProjectCardProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleMouseEnter = async () => {
+    if (preViewVideo && videoRef.current) {
+      try {
+        await videoRef.current.play();
+      } catch (error) {
+        console.log("Video autoplay failed", error);
+      }
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
   return (
-    <CardWrapper onClick={onClick}>
+    <CardWrapper
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <CardImageWrapper>
-        <CardImage src={image} alt={title} />
-        {/* <ImageOverlay /> */}
-        {/* <CardBigTitle>{title}</CardBigTitle> */}
+        {/* Default Image */}
+        {image && (
+          <CardImage
+            src={image}
+            alt={title}
+            hasVideo={!!preViewVideo}
+          />
+        )}
+
+        {/* Preview Video */}
+        {preViewVideo && preViewVideo !== null && (
+          <PreviewVideo
+            ref={videoRef}
+            src={`http://192.168.1.80:7132/${preViewVideo}`}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+        )}
+
+        <Overlay />
       </CardImageWrapper>
+
       <CardContent>
         <CardTitle>{title}</CardTitle>
-        {/* <CardDescription>{description}</CardDescription> */}
       </CardContent>
     </CardWrapper>
   );
@@ -39,9 +83,11 @@ const CardWrapper = styled.div`
   gap: 10px;
   cursor: pointer;
   transition: transform 0.22s ease;
+
   &:hover {
     transform: translateY(-4px);
   }
+
   @media (max-width: 768px) {
     max-width: 100%;
   }
@@ -55,52 +101,58 @@ const CardImageWrapper = styled.div`
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #111;
+
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
   @media (max-width: 768px) {
     height: 190px;
   }
 `;
 
-const CardImage = styled.img`
+const CardImage = styled.img<{ hasVideo: boolean }>`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+
+  transition:
+    transform 0.5s ease,
+    opacity 0.3s ease;
+
   ${CardWrapper}:hover & {
+    transform: scale(1.05);
+    opacity: ${({ hasVideo }) => (hasVideo ? 0 : 1)};
+  }
+`;
+
+const PreviewVideo = styled.video`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  opacity: 0;
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s ease;
+
+  ${CardWrapper}:hover & {
+    opacity: 1;
     transform: scale(1.05);
   }
 `;
 
-const ImageOverlay = styled.div`
+const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.95) 0%,
-      rgba(0, 0, 0, 0.45) 40%,
-      rgba(0, 0, 0, 0.08) 100%
-    );
-`;
-
-const CardBigTitle = styled.h2`
-  position: absolute;
-  left: 16px;
-  bottom: 8px;
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: clamp(36px, 5vw, 74px);
-  font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -3px;
-  text-transform: uppercase;
-  color: white;
-  text-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.45),
-    0 2px 4px rgba(0, 0, 0, 0.3);
-  user-select: none;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.45),
+    rgba(0, 0, 0, 0.05)
+  );
+  pointer-events: none;
 `;
 
 const CardContent = styled.div`
@@ -117,17 +169,4 @@ const CardTitle = styled.h3`
   font-weight: 700;
   color: ${({ theme }) => theme.primaryText};
   letter-spacing: -0.4px;
-`;
-
-const CardDescription = styled.p`
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.primaryText};
-  opacity: 0.62;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 `;

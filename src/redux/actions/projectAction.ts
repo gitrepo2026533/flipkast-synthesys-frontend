@@ -24,6 +24,7 @@ export const LOCK_VIDEO_PROJECT_SERVER = "LOCK_VIDEO_PROJECT_SERVER";
 export const MERGE_VIDEOS_PROJECT_SERVER = "MERGE_VIDEOS_PROJECT_SERVER";
 export const SET_ACTIVE_DRAFT_SLIDE = "DRAFT_SLIDE";
 export const CLEAR_ACTIVE_DRAFT_SLIDE = "CLEAR_DRAFT_SLIDE";
+export const UPDATE_SLIDE_STATUS_SERVER = "UPDATE_SLIDE_STATUS_SERVER";
 interface UpdateProjectLoadingProps {
   module: ProjectModules;
   isLoading: boolean;
@@ -316,7 +317,7 @@ export const getPreviewProjectServer = (projectId: number) => ({
   payload: {
     request: {
       method: "GET",
-      url: `/Project/preview?projectId=${projectId}`,
+      url: `/project/preview?projectId=${projectId}`,
     },
   },
 });
@@ -350,4 +351,14 @@ export const setActiveDraftSlide = (slide: any) => ({
 
 export const clearActiveDraftSlide = () => ({
   type: CLEAR_ACTIVE_DRAFT_SLIDE,
+});
+
+export const updateSlideStatusServer = (projectId: number, slideId: number, active: boolean) => ({
+  type: UPDATE_SLIDE_STATUS_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: `/slide/active?slideId=${slideId}&active=${active}&projectId=${projectId}`,
+    },
+  },
 });

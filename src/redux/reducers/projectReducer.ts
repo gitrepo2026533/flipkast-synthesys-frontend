@@ -22,6 +22,7 @@ import {
   MERGE_VIDEOS_PROJECT_SERVER,
   SET_ACTIVE_DRAFT_SLIDE,
   CLEAR_ACTIVE_DRAFT_SLIDE,
+  UPDATE_SLIDE_STATUS_SERVER,
 } from "../actions/projectAction";
 import { GENERATE_VOICE_SERVER } from "../actions/actorActions";
 import { checkIfZoneCached } from "../../lib/editorUtils";
@@ -188,6 +189,7 @@ const profileReducer = (state = projectInitialState, action: any) => {
               ...state[ProjectModules.project].audio,
               loadingZonesAudio: [],
             },
+            isLoding: false,
           },
         };
       } else {
@@ -203,6 +205,7 @@ const profileReducer = (state = projectInitialState, action: any) => {
           ...state,
           [ProjectModules.project]: {
             ...state[ProjectModules.project],
+            isLoding: false,
             audio: {
               ...state[ProjectModules.project].audio,
               loadingZonesAudio,
@@ -240,25 +243,6 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
-    // case `${DOWNLOAD_VOICE_SERVER}_SUCCESS`: {
-    //   return {
-    //     ...state,
-    //     [ActorModules.downloadAudio]: {
-    //       ...state[ActorModules.downloadAudio],
-    //       data: action.payload.data,
-    //     },
-    //   };
-    // }
-    // case CLEAR_VOICE: {
-    //   return {
-    //     ...state,
-    //     [ActorModules.audioList]: {
-    //       ...state[ActorModules.audioList],
-    //       data: [],
-    //     },
-    //   };
-    // }
-
     case CLEAR_CURRENT_PROJECT: {
       return {
         ...state,
@@ -314,6 +298,15 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
+    case CREATE_VIDEO_PROJECT_SERVER: {
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          isLoading: true,
+        },
+      };
+    }
     case `${CREATE_VIDEO_PROJECT_SERVER}_SUCCESS`: {
       return {
         ...state,
@@ -332,6 +325,17 @@ const profileReducer = (state = projectInitialState, action: any) => {
           project: action.payload.data.data,
           slidesData: action.payload.data.data.slides || [],
           isLoading: false,
+          isDraftSlide: false,
+          draftSlideData: null,
+        },
+      };
+    }
+    case GET_PROJECT_SLIDE_SERVER: {
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          // isLoading: true,
         },
       };
     }
@@ -470,6 +474,37 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
+    case `${UPDATE_SLIDE_STATUS_SERVER}_SUCCESS`: {
+      const updatedSlide = action.payload.data.data;
+
+      const slide = state[ProjectModules.project].project?.slides?.map((slide: any) =>
+        slide.slideId === updatedSlide.slides[0].slideId
+          ? {
+              ...slide,
+              isActive: updatedSlide.slides[0].isActive,
+            }
+          : slide,
+      );
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          project: {
+            ...state[ProjectModules.project].project,
+            slides: slide,
+          },
+          slidesData: state[ProjectModules.project].slidesData?.map((slide: any) =>
+            slide.slideId === updatedSlide.slides[0].slideId
+              ? {
+                  ...slide,
+                  isActive: updatedSlide.slides[0].isActive,
+                }
+              : slide,
+          ),
+          isLoading: false,
+        },
+      };
+    }
     default: {
       return { ...state };
     }
@@ -497,5 +532,7 @@ export const getSlidesData = (state: StoreType) => state.project[ProjectModules.
 export const getProjectPreview = (state: StoreType) => state.project[ProjectModules.project]?.preview;
 export const getIsDraftSlide = (state: StoreType) => state.project[ProjectModules.project]?.isDraftSlide;
 export const getDraftSlideData = (state: StoreType) => state.project[ProjectModules.project]?.draftSlideData;
+
+export const createProjectLoading = (state: StoreType) => state.project[ProjectModules.project].isLoading;
 
 export default profileReducer;
