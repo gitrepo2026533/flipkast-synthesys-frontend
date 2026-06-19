@@ -2,28 +2,28 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
 
-import Button from "../Button/Button";
+import { useEffect, useRef, useState } from "react";
 import { pages } from "../../lib/routeUtils";
 import { products } from "../../mocks/products";
+import { logout } from "../../redux/actions/authActions";
 import { Popups, updatePopup } from "../../redux/actions/popupsActions";
+import { getMyProfileServer } from "../../redux/actions/profileActions";
+import { getCheckCloneVoiceLoading, getProfile } from "../../redux/reducers/profileReducer";
+import Button from "../Button/Button";
+import { AIAvatarGenerationIcon } from "../Icons/AIAvatarGeneration";
+import { AIVideoGenerationIcon } from "../Icons/AIVideoGenerationIcon";
+import ArrowDown from "../Icons/ArrowDown";
+import CircularProgress from "../Icons/CircularProgress";
 import {
+  ChatAPIIcon,
   HomeIcon,
+  LogoutIcon,
   PlanIcon,
   SettingsIcon,
   SharedIcon,
   StudioIcon,
   SupportIcon,
-  UpdatesIcon,
-  LogoutIcon,
-  ChatAPIIcon,
 } from "../Icons/Icons";
-import { logout } from "../../redux/actions/authActions";
-import { getMyProfileServer } from "../../redux/actions/profileActions";
-import { getCheckCloneVoiceLoading, getProfile } from "../../redux/reducers/profileReducer";
-import CircularProgress from "../Icons/CircularProgress";
-import { useEffect, useRef, useState } from "react";
-import ArrowDown from "../Icons/ArrowDown";
-import { AIVideoGenerationIcon } from "../Icons/AIVideoGenerationIcon";
 
 interface Props {
   mobile?: boolean;
@@ -70,8 +70,14 @@ const Sidebar = ({ mobile }: Props) => {
       icon: <AIVideoGenerationIcon />,
       link: "/ai-video",
     },
-    { id: 9, title: "Settings", icon: <SettingsIcon />, link: pages.settings() },
-    { id: 10, title: "Logout", icon: <LogoutIcon />, link: "" },
+    {
+      id: 9,
+      title: "AI Avatar Generation",
+      icon: <AIAvatarGenerationIcon />,
+      link: "/ai-avatar",
+    },
+    { id: 10, title: "Settings", icon: <SettingsIcon />, link: pages.settings() },
+    { id: 11, title: "Logout", icon: <LogoutIcon />, link: "" },
   ];
 
   const handleOpenPopup = () => {

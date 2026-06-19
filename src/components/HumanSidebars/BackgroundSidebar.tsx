@@ -10,11 +10,12 @@ interface Props {
   active: BackgroundProps;
   onClick?: (event: MouseEvent) => void;
   handleBackgroundChange: (src: string) => void;
+  hideEdit?: boolean;
 }
 
 const ACCEPTED_FORMATS = "image/png, image/jpg";
 
-const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange }: Props) => {
+const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange, hideEdit }: Props) => {
   const [modeSelection, setModeSelection] = useState(false);
 
   const handleEditMode = () => setModeSelection(true);
@@ -30,9 +31,11 @@ const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange }: Pr
             <ViewContent>
               <SidebarContent element={element} handleBackgroundChange={handleBackgroundChange} />
             </ViewContent>
-            <ActionWrapper modeSelection={modeSelection}>
-              <Button icon={<EditIcon />} text="Edit" onClick={handleEditMode} />
-            </ActionWrapper>
+            {!hideEdit && (
+              <ActionWrapper modeSelection={modeSelection}>
+                <Button icon={<EditIcon />} text="Edit" onClick={handleEditMode} />
+              </ActionWrapper>
+            )}
           </>
         ) : (
           <>
@@ -44,7 +47,19 @@ const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange }: Pr
         )
       ) : (
         <>
-          <input type="file" id="settingsImage" name="settingsImage" accept={ACCEPTED_FORMATS} />
+          <input
+            type="file"
+            id="settingsImage"
+            name="settingsImage"
+            accept={ACCEPTED_FORMATS}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const url = URL.createObjectURL(file);
+                handleBackgroundChange(url);
+              }
+            }}
+          />
           <span>Upload background image from your device</span>
         </>
       )}
