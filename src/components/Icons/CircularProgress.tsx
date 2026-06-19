@@ -10,6 +10,7 @@ const CircularProgress = ({ color }: any) => {
         width="40px"
         height="40px"
         viewBox="0 0 50 50"
+        style={{ display: "block" }}
       >
         <path
           fill={color || "#fff"}

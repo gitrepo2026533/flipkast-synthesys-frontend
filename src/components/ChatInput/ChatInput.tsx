@@ -1,9 +1,10 @@
 /* eslint-disable prettier/prettier */
 import React, { useRef, useState } from "react";
 import styled from "styled-components";
-import { AttachmentIcon } from "../Icons/AttachmentIcon";
-import { ArrowUpIcon } from "../Icons/ArrowUpIcon";
 import InputChip from "../Chip/inputChip";
+import { ArrowUpIcon } from "../Icons/ArrowUpIcon";
+import { AttachmentIcon } from "../Icons/AttachmentIcon";
+import CircularProgress from "../Icons/CircularProgress";
 
 interface ChatInputProps {
     value: string;
@@ -28,6 +29,15 @@ interface ChatInputProps {
     models?: string[];
     selectedModel?: string;
     onSelectModel?: (model: string) => void;
+    showLoading?: boolean;
+    extraLeftActions?: React.ReactNode;
+    previewChips?: {
+        label: string;
+        title: string;
+        image: string;
+        onRemove: () => void;
+        onClick?: () => void;
+    }[];
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -44,6 +54,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     models = [],
     selectedModel = models[0],
     onSelectModel,
+    showLoading = false,
+    extraLeftActions,
+    previewChips = [],
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [showModelMenu, setShowModelMenu] = useState(false);
@@ -100,13 +113,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
             />
 
             <PromptWrapper>
-                {attachedFiles.length > 0 && (
+                {((attachedFiles && attachedFiles.length > 0) || previewChips.length > 0) && (
                     <PreviewImagesWrapper>
-                        {attachedFiles.map((file, index) => {
+                        {previewChips?.map((chip, index) => (
+                            <PreviewCard key={`chip-${index}`} onClick={chip.onClick}>
+                                <PreviewImage src={chip.image} alt={chip.title} />
+                                <PreviewCardOverlay>
+                                    <PreviewCardLabel>{chip.label}</PreviewCardLabel>
+                                    <PreviewCardTitle>{chip.title}</PreviewCardTitle>
+                                </PreviewCardOverlay>
+                                <RemovePreviewButton
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        chip.onRemove();
+                                    }}
+                                >
+                                    ✕
+                                </RemovePreviewButton>
+                            </PreviewCard>
+                        ))}
+
+                        {attachedFiles?.map((file, index) => {
                             const isImage = file.type.startsWith("image/");
 
                             return (
-                                <PreviewCard key={index}>
+                                <PreviewCard key={`file-${index}`}>
                                     {isImage ? (
                                         <PreviewImage
                                             src={URL.createObjectURL(file)}
@@ -180,6 +211,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 isActive={chip.isActive}
                             />
                         ))}
+
+                        {extraLeftActions}
                     </LeftActions>
 
                     <RightActions>
@@ -213,7 +246,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             $active={!!value.trim()}
                             onClick={onSend}
                         >
-                            <ArrowUpIcon />
+                            {
+                                showLoading ? <CircularProgress/> : <ArrowUpIcon />
+                            }
                         </SendButton>
                     </RightActions>
                 </BottomBar>
@@ -504,8 +539,10 @@ const RemovePreviewButton = styled.button`
   height: 22px;
   border-radius: 50%;
   border: none;
+  border: 1px solid
+    ${({ theme }) => theme.chatTextfieldBorder};
   background: ${({ theme }) => theme.overlayBackground};
-  color: ${({ theme }) => theme.white};
+  color: ${({ theme }) => theme.color};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -516,4 +553,34 @@ const RemovePreviewButton = styled.button`
   &:hover {
     transform: scale(1.08);
   }
+`;
+
+const PreviewCardOverlay = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  padding: 16px 6px 4px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+`;
+
+const PreviewCardLabel = styled.span`
+  font-family: "Montserrat", sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.activeMenu || "#009af7"};
+  text-transform: uppercase;
+  margin-bottom: 2px;
+`;
+
+const PreviewCardTitle = styled.span`
+  font-family: "Montserrat", sans-serif;
+  font-size: 10px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
