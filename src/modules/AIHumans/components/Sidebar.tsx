@@ -4,24 +4,23 @@ import styled from "styled-components";
 import { ProfileHumanSidebarType } from "../../../types/human";
 
 import Button, { ButtonThemes } from "../../../components/Button/Button";
-import IconButton, { IconButtonThemes } from "../../../components/Button/IconButton";
 import BackgroundSidebar from "../../../components/HumanSidebars/BackgroundSidebar";
 import HumatarSidebar from "../../../components/HumanSidebars/HumatarSidebar";
+import ScriptSidebar from "../../../components/HumanSidebars/ScriptSidebar";
 import ShapesSidebar from "../../../components/HumanSidebars/ShapesSidebar";
 import SoundtrackSidebar from "../../../components/HumanSidebars/SoundtrackSidebar";
 import TransitionSidebar from "../../../components/HumanSidebars/TransitionSidebar";
 import HumanSwitcher from "../../../components/HumanSwitcher/HumanSwitcher";
+import { DropdownDelete, ImportIcon, SearchIcon } from "../../../components/Icons/Icons";
 import Textfield from "../../../components/Textfield/Textfield";
-import TitleWithAction from "./TitleWithAction";
 import AddTextPanel from "../../ScenesPoc/components/AddTextPanel";
 import ObjectChips from "../../ScenesPoc/components/ObjectChips";
 import PropertiesPanel from "../../ScenesPoc/components/PropertiesPanel";
-import { DropdownDelete, ImportIcon, SearchFilterIcon, SearchIcon } from "../../../components/Icons/Icons";
+import TitleWithAction from "./TitleWithAction";
 
-import { BackgroundProps, humans } from "../../../mocks/humans";
-import { ObjectTypes, SceneObject } from "../../../types/scene";
 import { useDispatch } from "react-redux";
-import { Popups, updatePopup } from "../../../redux/actions/popupsActions";
+import { BackgroundProps } from "../../../mocks/humans";
+import { ObjectTypes, SceneObject } from "../../../types/scene";
 
 const Sidebar = ({
   element,
@@ -35,6 +34,7 @@ const Sidebar = ({
   handleAddAvatar,
   handleAddShape,
   updateSize,
+  handleScriptChange,
 }: any): any => {
   const dispatch = useDispatch();
 
@@ -51,6 +51,7 @@ const Sidebar = ({
             <BackgroundSidebar
               active={activeBackground}
               data={element.data}
+              hideEdit={true}
               handleBackgroundChange={handleBackgroundChange}
             />
           </TitleWithAction>
@@ -63,25 +64,26 @@ const Sidebar = ({
           <TitleWithAction
             type="humatar"
             title="Humatar"
-            action={
-              <>
-                <IconButton
-                  iconButtonTheme={IconButtonThemes.Transparent}
-                  icon={<SearchFilterIcon />}
-                  onClick={() =>
-                    dispatch(
-                      updatePopup({
-                        popup: Popups.aIHumansPopup,
-                        status: true,
-                        prefilled: {
-                          humans,
-                        },
-                      }),
-                    )
-                  }
-                />
-              </>
-            }
+            // Commented AI Humans Pop-up
+            // action={
+            //   <>
+            //     <IconButton
+            //       iconButtonTheme={IconButtonThemes.Transparent}
+            //       icon={<SearchFilterIcon />}
+            //       onClick={() =>
+            //         dispatch(
+            //           updatePopup({
+            //             popup: Popups.aIHumansPopup,
+            //             status: true,
+            //             prefilled: {
+            //               humans,
+            //             },
+            //           }),
+            //         )
+            //       }
+            //     />
+            //   </>
+            // }
           >
             <HumatarSidebar data={element.data} updateSize={updateSize} handleAddAvatar={handleAddAvatar} />
           </TitleWithAction>
@@ -104,6 +106,14 @@ const Sidebar = ({
             action={<Button buttonTheme={ButtonThemes.Secondary} icon={<ImportIcon />} text="Upload" />}
           >
             <SoundtrackSidebar data={element.data} />
+          </TitleWithAction>
+        </Wrapper>
+      );
+    case ProfileHumanSidebarType.Script:
+      return (
+        <Wrapper>
+          <TitleWithAction title="Script">
+            <ScriptSidebar currentScript={currentScene?.script} handleScriptChange={handleScriptChange} />
           </TitleWithAction>
         </Wrapper>
       );

@@ -155,9 +155,9 @@ export const sidebar = [
           { id: 12, video: "/images/mock.png" },
         ],
       },
-      {
-        type: BackgroundProps.UPLOAD,
-      },
+      // {
+      //   type: BackgroundProps.UPLOAD,
+      // },
     ],
   },
   // {
@@ -440,6 +440,9 @@ export const sidebar = [
         shapeName: "Arrow",
       },
     ],
+  },
+  {
+    type: ProfileHumanSidebarType.Script,
   },
 ];
 

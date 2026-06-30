@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Position, ResizableDelta } from "react-rnd";
-import { Scene as SceneType, TextTypes, TextAlign, ShapeTypes, ObjectTypes, Text, SceneObject } from "../types/scene";
+import { ObjectTypes, SceneObject, Scene as SceneType, ShapeTypes, TextAlign, TextTypes } from "../types/scene";
 import { useVideoSceneHistory } from "./useVideoSceneHistory";
 
 const DEFAULT_OBJECT_POSITION = { x: 10, y: 10 };
@@ -72,6 +72,7 @@ export const useVideoEditor = () => {
       activeObjectId: 0,
       editableTextId: 0,
       objects: [],
+      script: "",
     };
     setScenes((scenes) => [...scenes, newScene]);
     setActiveSceneId(rand);
@@ -260,6 +261,11 @@ export const useVideoEditor = () => {
     }
   };
 
+  const handleScriptChange = (script: string) => {
+    if (!currentScene) return;
+    updateScene({ ...currentScene, script: script });
+  };
+
   useEffect(() => {
     addEventListener("keydown", handleKeyboardPress);
 
@@ -283,6 +289,7 @@ export const useVideoEditor = () => {
     handleBackgroundChange,
     deleteAllText,
     setEditableTextId,
+    handleScriptChange,
     scenes: currentScenes || scenes,
     currentScene,
     activeSceneId,

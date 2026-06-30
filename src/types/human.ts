@@ -30,4 +30,5 @@ export enum ProfileHumanSidebarType {
   // Subtitle = "Subtitle",
   Transitions = "Transitions",
   Shapes = "Shapes",
+  Script = "Script",
 }

@@ -1,24 +1,23 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 import Button, { ButtonThemes } from "../../components/Button/Button";
 import IconButton, { IconButtonThemes } from "../../components/Button/IconButton";
-import { ArrowRight, DesktopIcon, SquareIcon, ThreeSectionLayout } from "../../components/Icons/Icons";
+import { ArrowRight, DesktopIcon } from "../../components/Icons/Icons";
 import { MobileIcon } from "../../components/Icons/MobileIcon";
-import ProfileHumanSidebar from "./components/ProfileHumanSidebar";
+import { useVideoEditor } from "../../hooks/useVideoEditor";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { featuresSettings, sidebar } from "../../mocks/humans";
 import { getActorsServer } from "../../redux/actions/actorActions";
 import { getActorsList } from "../../redux/reducers/actorReducer";
+import { IActor } from "../../types/actor";
 import { ProfileHumanSidebarType } from "../../types/human";
 import { Paragraphs } from "../../types/project";
+import Scene from "../ScenesPoc/components/Scene";
+import ProfileHumanSidebar from "./components/ProfileHumanSidebar";
+import Sidebar from "./components/Sidebar";
 import SoundFeaturesSettingsCard from "./components/SoundFeaturesSettingsCard";
 import Timeline from "./components/Timeline";
-import { useVideoEditor } from "../../hooks/useVideoEditor";
-import Scene from "../ScenesPoc/components/Scene";
-import Sidebar from "./components/Sidebar";
-import { IActor } from "../../types/actor";
 
 const screens = [
   { id: 1, icon: <DesktopIcon /> },
@@ -117,10 +116,13 @@ const AIHumansPage = () => {
     handleBackgroundChange,
     deleteAllText,
     setEditableTextId,
+    handleScriptChange,
     scenes,
     currentScene,
     activeSceneId,
   } = useVideoEditor();
+
+  if (!scenes.length) addScene();
 
   return (
     <Wrapper>
@@ -141,7 +143,7 @@ const AIHumansPage = () => {
                     key={id}
                     iconButtonTheme={IconButtonThemes.Rounded}
                     icon={icon}
-                    className={active === id ? "active" : "not-active"}
+                    className={active === id ? "not-active" : "active"}
                     onClick={() => handleActive(id)}
                   />
                 ))}
@@ -170,6 +172,7 @@ const AIHumansPage = () => {
                   deleteAllText={deleteAllText}
                   handleAddAvatar={handleAddAvatar}
                   handleAddShape={handleAddShape}
+                  handleScriptChange={handleScriptChange}
                 />
               </Left>
             )}
@@ -187,24 +190,25 @@ const AIHumansPage = () => {
                     />
                   )}
                 </ImageWrapper>
-                <SoundFeaturesSettingsCard
-                  actors={actorsList}
-                  active={actorId}
-                  paragraphs={paragraphs}
-                  setActorActive={handleActorPopupClick}
-                  featuresSettings={featuresSettings}
-                  currentParagraphActor={actor || paragraphActor}
-                  currentParagraphActorsList={paragraphActorsList || []}
+                <Timeline
+                  scenes={scenes}
+                  activeSceneId={activeSceneId}
+                  addScene={addScene}
+                  dublicateScene={dublicateScene}
+                  handleDeleteScene={handleDeleteScene}
+                  handleChangeActiveScene={handleChangeActiveScene}
+                  setActiveSidebarItem={setActiveSidebarItem}
+                  orientation="horizontal"
                 />
               </div>
-              <Timeline
-                scenes={scenes}
-                activeSceneId={activeSceneId}
-                addScene={addScene}
-                dublicateScene={dublicateScene}
-                handleDeleteScene={handleDeleteScene}
-                handleChangeActiveScene={handleChangeActiveScene}
-                setActiveSidebarItem={setActiveSidebarItem}
+              <SoundFeaturesSettingsCard
+                actors={actorsList}
+                active={actorId}
+                paragraphs={paragraphs}
+                setActorActive={handleActorPopupClick}
+                featuresSettings={featuresSettings}
+                currentParagraphActor={actor || paragraphActor}
+                currentParagraphActorsList={paragraphActorsList || []}
               />
             </Right>
           </Content>
@@ -292,7 +296,7 @@ const Right = styled.div`
 const ImageWrapper = styled.div`
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 80%;
 `;
 
 const IconButtonWrapper = styled.div<{ active?: boolean }>`

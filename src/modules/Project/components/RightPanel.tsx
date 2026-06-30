@@ -1,14 +1,13 @@
 /* eslint-disable prettier/prettier */
-import styled, { keyframes, css } from "styled-components";
 import { useEffect, useRef, useState } from "react";
-import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
 import { useDispatch, useSelector } from "react-redux";
-import { clearActiveDraftSlide, getProjectSlideServer, setActiveDraftSlide } from "../../../redux/actions/projectAction";
-import { deleteProjectSlideServer, updateSlideStatusServer } from "../../../redux/actions/projectAction";
-import PopupModel from "../../../components/PopupModel/PopupModel";
-import { PlayIcon } from "../../../components/Icons/PlayIcon";
-import { MoreIcon } from "../../../components/Icons/MoreIcon";
+import styled, { css, keyframes } from "styled-components";
 import { AddIcon } from "../../../components/Icons/AddIcon";
+import { MoreIcon } from "../../../components/Icons/MoreIcon";
+import { PlayIcon } from "../../../components/Icons/PlayIcon";
+import PopupModel from "../../../components/PopupModel/PopupModel";
+import { clearActiveDraftSlide, deleteProjectSlideServer, getProjectSlideServer, setActiveDraftSlide, updateSlideStatusServer } from "../../../redux/actions/projectAction";
+import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
 
 const formatTime = (s: number) => {
   if (isNaN(s)) return "0:00";
@@ -228,7 +227,7 @@ const RightPanelSide = () => {
         <SlidesTrack>
           {slides?.map((slide: any, idx: number) => {
             const isActive = slideData?.slideId === slide.slideId;
-            const thumb = slide?.backgroundAsset?.path ?? "https://picsum.photos/536/354";
+            const thumb = slide?.backgroundAsset?.path ?? "/images/mock.png";
             return (
               <SlideFlowWrapper key={slide.slideId}>
                 <SlideItem $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>

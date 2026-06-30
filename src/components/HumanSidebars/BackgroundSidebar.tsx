@@ -1,8 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { BackgroundProps } from "../../mocks/humans";
 import Button, { ButtonThemes } from "../Button/Button";
-import { CropIcon, EditIcon, PlusIcon, TrimIcon } from "../Icons/Icons";
+import { CropIcon, EditIcon, TrimIcon } from "../Icons/Icons";
 import Switch from "../Switch/Switch";
 
 interface Props {
@@ -13,7 +13,8 @@ interface Props {
   hideEdit?: boolean;
 }
 
-const ACCEPTED_FORMATS = "image/png, image/jpg";
+const ACCEPTED_IMG_FORMATS = "image/png, image/jpg";
+const ACCEPTED_VIDEO_FORMATS = "video/mp4, video/avi";
 
 const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange, hideEdit }: Props) => {
   const [modeSelection, setModeSelection] = useState(false);
@@ -51,7 +52,7 @@ const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange, hide
             type="file"
             id="settingsImage"
             name="settingsImage"
-            accept={ACCEPTED_FORMATS}
+            accept={ACCEPTED_IMG_FORMATS}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
@@ -70,11 +71,54 @@ const BackgroundSidebar = ({ data, active, onClick, handleBackgroundChange, hide
 const SidebarContent = ({ element, handleBackgroundChange }: any) => {
   switch (element.type) {
     case BackgroundProps.IMAGE:
-      return element.data.map(({ id, image }: any) => (
-        <img key={id} onClick={() => handleBackgroundChange(image)} src={image} alt="" />
+      return element.data.map(({ id, image }: any, index: number) => (
+        <React.Fragment key={id}>
+          {index === 0 && (
+            <div className="upload">
+              <input
+                type="file"
+                id="settingsImage"
+                name="settingsImage"
+                accept={ACCEPTED_IMG_FORMATS}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    handleBackgroundChange(url);
+                  }
+                }}
+              />
+              <span>+</span>
+            </div>
+          )}
+
+          <img onClick={() => handleBackgroundChange(image)} src={image} alt="" />
+        </React.Fragment>
       ));
     case BackgroundProps.VIDEO:
-      return element.data.map(({ id, video }: any) => <img key={id} src={video} alt="" />);
+      return element.data.map(({ id, video }: any, index: number) => (
+        <React.Fragment key={id}>
+          {index === 0 && (
+            <div className="upload">
+              <input
+                type="file"
+                id="settingsBG"
+                name="settingsBG"
+                accept={ACCEPTED_VIDEO_FORMATS}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    handleBackgroundChange(url);
+                  }
+                }}
+              />
+              <span>+</span>
+            </div>
+          )}
+          <img key={id} src={video} alt="" />
+        </React.Fragment>
+      ));
     default:
       break;
   }
@@ -136,6 +180,35 @@ const Wrapper = styled.div<{ upload?: boolean }>`
   height: 100%;
   display: flex;
   flex-direction: column;
+
+  .upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed ${({ theme }) => theme.activeMenu};
+    width: 120px;
+    max-height: 80px;
+    border-radius: 12px;
+    cursor: pointer;
+    input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      max-width: 120px;
+    }
+    span {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 45px;
+      line-height: 24px;
+      text-align: center;
+      background: ${({ theme }) => theme.button};
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+  }
 
   ${({ upload, theme }) =>
     upload &&

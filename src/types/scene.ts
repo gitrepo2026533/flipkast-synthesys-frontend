@@ -66,6 +66,7 @@ export interface Scene {
   editableTextId: number;
   background: string | BackgroundColor;
   objects: SceneObject[];
+  script: string;
 }
 
 export enum ObjectTypes {
