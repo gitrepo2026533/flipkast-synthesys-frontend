@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -18,6 +18,11 @@ import { getProjectSlideServer, lockVideoProjectServer, ProjectType, updateVideo
 import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
 import { IHuman, ProfileHumanSidebarType } from "../../../types/human";
 import { chips, models } from "../data";
+import { getActorsList } from "../../../redux/reducers/actorReducer";
+import { getActorsServer } from "../../../redux/actions/actorActions";
+import { getFullImageUrl } from "../../../lib/getFullImageUrl";
+import { getAllUserAssetsServer } from "../../../redux/actions/profileActions";
+import { getUserAssets } from "../../../redux/reducers/profileReducer";
 
 interface Paragraph {
   projectParagraphId: number;
@@ -48,12 +53,42 @@ const LeftPanelSide = () => {
   const isAvatarProject = projectData?.projectTypeId === ProjectType.AVT;
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<IHuman | null>(null);
-  const avatarData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Humatar)?.data;
   const [showBgModal, setShowBgModal] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
-  const backgroundData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data;
 
   const paragraphs: Paragraph[] = slideData?.projectParagraphs;
+
+  const actorsList = useSelector(getActorsList);
+
+  useEffect(() => {
+    dispatch(getActorsServer({ pageNumber: 1 }));
+    dispatch(getAllUserAssetsServer({
+      pageNumber: 1, pageSize: 60, assetTypeId: 11,
+      sortWith: "insertDateTime",
+      sortByDesc: true,
+    }));
+  }, [dispatch]);
+
+  const avatarData = actorsList?.map((actor) => ({
+    id: actor.actorId,
+    image: getFullImageUrl(actor.photo),
+  }));
+
+  const userAssets = useSelector(getUserAssets);
+  const backgroundData = useMemo(() => {
+    const assets = userAssets?.map((asset: any) => ({
+      id: asset.userAssetID,
+      image: asset.path,
+    })) || [];
+
+    const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+    return mockBgData.map((category: any) => {
+        return {
+          ...category,
+          data: assets,
+        };
+    });
+  }, [userAssets]);
 
   const handleSend = async () => {
     if (!prompt.trim()) return;
@@ -61,30 +96,52 @@ const LeftPanelSide = () => {
       toast.error("Please select both an Avatar and a Background before generating.");
       return;
     }
+    let bgId: string | number | undefined = isAvatarProject ? selectedBackground! : undefined;
+    if (isAvatarProject && backgroundData && selectedBackground) {
+      backgroundData.forEach((category: any) => {
+        if (category.data) {
+          const match = category.data.find((b: any) => b.image === selectedBackground || b.video === selectedBackground);
+          if (match) bgId = match.id;
+        }
+      });
+    }
+
     setAttachedFiles([]);
     setPrompt("");
     setSelectedModel(models[0]);
-    dispatch(
-      updateVideoProjectServer({
-        title: projectData?.title,
-        projectId: Number(projectId),
-        slides: [
-          {
-            slideId: slideData.slideId,
-            order: slideData.order,
-            slideBackgroundColor: isAvatarProject ? selectedBackground! : slideData.slideBackgroundColor,
-            projectParagraphs: [
-              {
-                projectParagraphId: 0,
-                order: 1,
-                actorId: isAvatarProject ? selectedAvatar!.id : 12270,
-                text: prompt.trim(),
-              },
-            ],
-          },
-        ],
-      })
-    );
+    setIsTyping(true);
+    try {
+      await dispatch(
+        updateVideoProjectServer({
+          title: projectData?.title,
+          projectId: Number(projectId),
+          slides: [
+            {
+              slideId: slideData.slideId,
+              order: slideData.order,
+              slideBackgroundColor: isAvatarProject ? selectedBackground! : slideData.slideBackgroundColor,
+              backgroundId: bgId,
+              projectParagraphs: [
+                {
+                  projectParagraphId: 0,
+                  order: 1,
+                  actorId: isAvatarProject ? selectedAvatar!.id : 12270,
+                  text: prompt.trim(),
+                },
+              ],
+            },
+          ],
+        })
+      );
+    } finally {
+      setIsTyping(false);
+    }
+    
+    if (isAvatarProject) {
+      setSelectedAvatar(null);
+      setSelectedBackground(null);
+      setPreviewChips([]);
+    }
     // dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId)));
   };
 

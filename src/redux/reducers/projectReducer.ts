@@ -372,6 +372,51 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
+    case UPDATE_VIDEO_PROJECT_SERVER: {
+      const newSlide = action.payload.request.data.slides[0];
+      const newParagraph = newSlide?.projectParagraphs?.[0];
+
+      if (!newParagraph) return state;
+
+      const currentProject = state[ProjectModules.project].project;
+      const currentSlidesData = state[ProjectModules.project].slidesData || [];
+
+      // Optimistically append the new paragraph to the relevant slide
+      const updatedSlidesData = currentSlidesData.map((slide) => {
+        if (slide.slideId === newSlide.slideId) {
+          return {
+            ...slide,
+            projectParagraphs: [...(slide.projectParagraphs || []), newParagraph],
+          };
+        }
+        return slide;
+      });
+
+      const updatedProjectSlides = currentProject?.slides?.map((slide: any) => {
+        if (slide.slideId === newSlide.slideId) {
+          return {
+            ...slide,
+            projectParagraphs: [...(slide.projectParagraphs || []), newParagraph],
+          };
+        }
+        return slide;
+      });
+
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          slidesData: updatedSlidesData,
+          project: currentProject
+            ? {
+                ...currentProject,
+                slides: updatedProjectSlides,
+              }
+            : currentProject,
+          // We do not set isLoading: true to prevent unmounting the UI
+        },
+      };
+    }
     // case `${UPDATE_VIDEO_PROJECT_SERVER}_SUCCESS`: {
     //   // check slides is new
     //   const updatedProject = action.payload.data.data;

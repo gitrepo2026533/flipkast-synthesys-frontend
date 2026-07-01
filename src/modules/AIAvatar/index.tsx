@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -13,9 +13,15 @@ import { SearchIcon } from "../../components/Icons/SearchIcon";
 import Textfield from "../../components/Textfield/Textfield";
 import withPrivateRoute from "../../hocs/withPrivateRoute";
 import SidebarLayout from "../../layouts/SidebarLayout";
-import { sidebar } from "../../mocks/humans";
+import { BackgroundProps, sidebar } from "../../mocks/humans";
+import { StoreType } from "../../types/store";
 import { createAvatarProjectServer, getVideoProjectServer, ProjectType, resetCreatedProject } from "../../redux/actions/projectAction";
+import { getActorsServer } from "../../redux/actions/actorActions";
 import { createProjectLoading, getCreatedProject, getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
+import { getActorsList } from "../../redux/reducers/actorReducer";
+import { getAllUserAssetsServer } from "../../redux/actions/profileActions";
+import { getUserAssets } from "../../redux/reducers/profileReducer";
+import { getFullImageUrl } from "../../lib/getFullImageUrl";
 import { IHuman, ProfileHumanSidebarType } from "../../types/human";
 import VideoProjectCard from "../AIVideo/components/VideoProjectCard";
 import { chips, models } from "../AIVideo/data";
@@ -43,15 +49,44 @@ const AiAvatar = () => {
   const [projectsData, setProjectsData] = useState<any[]>([]);
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
 
+  const actorsList = useSelector(getActorsList);
+
+  useEffect(() => {
+    dispatch(getActorsServer({ pageNumber: 1 }));
+    dispatch(getAllUserAssetsServer({
+      pageNumber: 1, pageSize: 60, assetTypeId: 11,
+      sortWith: "insertDateTime",
+      sortByDesc: true,
+    }));
+  }, [dispatch]);
+
   // Avatar Selection State
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<IHuman | null>(null);
-  const avatarData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Humatar)?.data;
+  
+  const avatarData = actorsList?.map((actor) => ({
+    id: actor.actorId,
+    image: getFullImageUrl(actor.photo),
+  }));
 
   // Background Selection State
   const [showBgModal, setShowBgModal] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
-  const backgroundData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data;
+  const userAssets = useSelector(getUserAssets);
+  const backgroundData = useMemo(() => {
+    const assets = userAssets?.map((asset: any) => ({
+      id: asset.userAssetID,
+      image: asset.path,
+    })) || [];
+
+    const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+    return mockBgData.map((category: any) => {
+        return {
+          ...category,
+          data: assets,
+        };
+    });
+  }, [userAssets]);
 
   const handleSend = () => {
     if (prompt.trim() === "") return;
@@ -59,12 +94,21 @@ const AiAvatar = () => {
       toast.error("Please select both an Avatar and a Background before generating.");
       return;
     }
+
+    let bgId: string | number = selectedBackground;
+    backgroundData.forEach((category: any) => {
+      if (category.data) {
+        const match = category.data.find((b: any) => b.image === selectedBackground || b.video === selectedBackground);
+        if (match) bgId = match.id;
+      }
+    });
+
     // Include selected avatar and background images in the payload
     dispatch(createAvatarProjectServer({
       script: prompt.trim(),
       avatarImage: selectedAvatar.imageSrc,
       avatarId: selectedAvatar.id,
-      backgroundId: selectedBackground,
+      backgroundId: bgId,
       backgroundImage: selectedBackground,
     }));
   };
@@ -157,7 +201,7 @@ const AiAvatar = () => {
           <Container>
             <HeroSection>
               <HeroText>
-                <PageTitle>Generate AI Avatars</PageTitle>
+                <PageTitle>Generate AI Avatar Videos</PageTitle>
                 <PageSubtitle>from Script</PageSubtitle>
               </HeroText>
 
@@ -192,15 +236,23 @@ const AiAvatar = () => {
                 />
               </ProjectsHeader>
               <ProjectsGrid onScroll={handleScroll}>
-                {projectsData.map((project) => (
-                  <VideoProjectCard
-                    key={project.projectId}
-                    title={project.title}
-                    image={project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354"}
-                    preViewVideo={project?.output}
-                    onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
-                  />
-                ))}
+                {projectsData.length > 0 ? (
+                  projectsData.map((project) => (
+                    <VideoProjectCard
+                      key={project.projectId}
+                      title={project.title}
+                      image={project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354"}
+                      preViewVideo={project?.output}
+                      onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
+                    />
+                  ))
+                ) : (
+                  !projectListLoading && (
+                    <NoProjectsWrapper>
+                      <NoProjectsText>No projects yet</NoProjectsText>
+                    </NoProjectsWrapper>
+                  )
+                )}
                 {projectListLoading && (
                   <LoadingWrapper>
                     <CircularProgress />
@@ -371,6 +423,24 @@ const LoadingWrapper = styled.div`
   justify-content: center;  
   align-items: center;
   padding: 20px 0;
+  grid-column: 1 / -1;
+`;
+
+const NoProjectsWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
+  width: 100%;
+  grid-column: 1 / -1;
+`;
+
+const NoProjectsText = styled.p`
+  font-family: "Montserrat", sans-serif;
+  font-size: 16px;
+  color: ${({ theme }) => theme.primaryText};
+  opacity: 0.5;
+  margin: 0;
 `;
 
 const ToolbarActions = styled.div`

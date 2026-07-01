@@ -58,9 +58,10 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
   return (
     <Wrapper>
       {pathname !== "/actors" && pathname !== "/ai-humans" ? (
-        <Link to="/">
+        <LogoLink to="/">
           <LogoIcon />
-        </Link>
+          <LogoText>AI Photon</LogoText>
+        </LogoLink>
       ) : startAdornment ? (
         startAdornment
       ) : (
@@ -102,14 +103,35 @@ const Wrapper = styled("div")`
   display: flex;
   align-items: center;
   justify-content: space-between;
+`;
 
-  & > a > svg {
+const LogoLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+
+  svg {
     display: block;
-    width: 230px;
+    width: 64px;
+    height: 64px;
 
     @media (max-width: 500px) {
-      width: 150px;
+      width: 48px;
+      height: 48px;
     }
+  }
+`;
+
+const LogoText = styled("span")`
+  font-size: 24px;
+  font-weight: 700;
+  color: ${({ theme }: any) => theme.activeMenu};
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+
+  @media (max-width: 500px) {
+    font-size: 18px;
   }
 `;
 

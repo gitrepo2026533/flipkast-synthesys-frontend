@@ -2,6 +2,7 @@ import React, { FC, ReactNode } from "react";
 import styled from "styled-components";
 import { leftSignIn, rightSignIn } from "../mocks/signin";
 import SignInCard from "../modules/SignIn/components/SignInCard";
+import { LogoIcon } from "../components/Icons/Icons";
 
 interface IFormProps {
   children: ReactNode;
@@ -11,6 +12,10 @@ interface IFormProps {
 const AuthLayout: FC<IFormProps> = ({ children, variant = "default" }) => {
   return (
     <Wrapper>
+      <AbsoluteLogoHeader>
+        <LogoIcon />
+        <LogoText>AI Photon</LogoText>
+      </AbsoluteLogoHeader>
       <AuthWrapper>
         {children}
         {variant === "default" && (
@@ -39,6 +44,34 @@ const Wrapper = styled("div")`
   display: flex;
   align-items: center;
   overflow: hidden;
+  position: relative;
+`;
+
+const AbsoluteLogoHeader = styled.div`
+  position: absolute;
+  top: 32px;
+  left: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+
+  svg {
+    width: 48px;
+    height: 48px;
+  }
+  @media (max-width: 768px) {
+    top: 24px;
+    left: 24px;
+  }
+`;
+
+const LogoText = styled.span`
+  font-size: 24px;
+  font-weight: 700;
+  color: ${({ theme }: any) => theme.activeMenu};
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 `;
 
 const AuthWrapper = styled("div")`

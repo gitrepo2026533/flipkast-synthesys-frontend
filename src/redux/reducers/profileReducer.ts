@@ -8,6 +8,7 @@ import {
   UPDATE_PROFILE_SERVER,
   UPLOAD_PROFILE_PIC,
   UPLOAD_PROFILE_PIC_SERVER,
+  GET_ALL_USER_ASSETS_SERVER,
 } from "../actions/profileActions";
 import { StoreType } from "../../types/store";
 
@@ -24,6 +25,10 @@ export interface profileStateType {
   [ProfileModules.generateApiKey]: {
     isLoading: boolean;
   };
+  [ProfileModules.userAssets]: {
+    assets: any[];
+    isLoading: boolean;
+  };
 }
 
 const profileInitialState: profileStateType = {
@@ -37,6 +42,10 @@ const profileInitialState: profileStateType = {
     isLoading: false,
   },
   [ProfileModules.generateApiKey]: {
+    isLoading: false,
+  },
+  [ProfileModules.userAssets]: {
+    assets: [],
     isLoading: false,
   },
 };
@@ -101,6 +110,34 @@ const profileReducer = (state = profileInitialState, action: any) => {
         },
       };
     }
+    case GET_ALL_USER_ASSETS_SERVER: {
+      return {
+        ...state,
+        [ProfileModules.userAssets]: {
+          ...state[ProfileModules.userAssets],
+          isLoading: true,
+        },
+      };
+    }
+    case `${GET_ALL_USER_ASSETS_SERVER}_SUCCESS`: {
+      return {
+        ...state,
+        [ProfileModules.userAssets]: {
+          ...state[ProfileModules.userAssets],
+          assets: action.payload.data.data || [],
+          isLoading: false,
+        },
+      };
+    }
+    case `${GET_ALL_USER_ASSETS_SERVER}_FAIL`: {
+      return {
+        ...state,
+        [ProfileModules.userAssets]: {
+          ...state[ProfileModules.userAssets],
+          isLoading: false,
+        },
+      };
+    }
     default: {
       return { ...state };
     }
@@ -113,5 +150,7 @@ export const getChangePasswordLoading = (state: StoreType) => state.profile[Prof
 export const getCheckCloneVoiceLoading = (state: StoreType) => state.profile[ProfileModules.checkCloneVoice].isLoading;
 
 export const getGenerateApiKeyLoading = (state: StoreType) => state.profile[ProfileModules.generateApiKey].isLoading;
+
+export const getUserAssets = (state: StoreType) => state.profile[ProfileModules.userAssets].assets;
 
 export default profileReducer;

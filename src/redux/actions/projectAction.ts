@@ -83,11 +83,11 @@ interface lockVideoProjectServerProps {
 
 export enum ProjectType {
   TTI = 1, //AI Voices
-  HSS = 2, //AI Humans
+  VIDEO = 2, //AI Video,
   FS = 3, //Faceswap
   T2I = 4, //Synthesys Visual
   BG = 5, //Change Image/Video Background
-  AVT = 6, //AI Avatar
+  AVT = 6, //AI Avatar,
 }
 
 interface DeleteProjectProps {
@@ -99,6 +99,7 @@ export interface updateVideoProjectPayload {
     slideId: number;
     order: number;
     slideBackgroundColor?: string;
+    backgroundId?: string | number;
     audioPath?: string;
     projectParagraphs?: {
       projectParagraphId: number;
@@ -243,6 +244,7 @@ export const createVideoProjectServer = ({ prompt }: createVideoProjectServerPro
       method: "POST",
       url: "/project/create",
       data: {
+        projectTypeId: ProjectType.AVT,
         slides: [
           {
             slideId: 0,

@@ -11,6 +11,7 @@ export const DELETE_PROFILE_PIC_SERVER = "DELETE_PROFILE_PIC_SERVER";
 export const CLONE_VOICE_SERVER = "CLONE_VOICE_SERVER";
 export const GENERATE_API_KEY_SERVER = "GENERATE_API_KEY_SERVER";
 export const REVOKE_API_KEY_SERVER = "REVOKE_API_KEY_SERVER";
+export const GET_ALL_USER_ASSETS_SERVER = "GET_ALL_USER_ASSETS_SERVER";
 
 interface UpdateProfileLoadingProps {
   module: ProfileModules;
@@ -132,6 +133,25 @@ export const revokeApiKeyServer = () => ({
     request: {
       method: "POST",
       url: "/user/generateApiKey?revoke=true",
+    },
+  },
+});
+
+interface GetAllUserAssetsServerProps {
+  pageNumber: number;
+  pageSize: number;
+  assetTypeId?: number;
+  sortWith?: string;
+  sortByDesc?: boolean;
+}
+
+export const getAllUserAssetsServer = (params: GetAllUserAssetsServerProps) => ({
+  type: GET_ALL_USER_ASSETS_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: `/User/getAllUserAssets`,
+      data: params,
     },
   },
 });

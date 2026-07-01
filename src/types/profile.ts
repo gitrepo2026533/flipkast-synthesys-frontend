@@ -28,4 +28,5 @@ export enum ProfileModules {
   "changePassword" = "changePassword",
   "checkCloneVoice" = "checkCloneVoice",
   "generateApiKey" = "generateApiKey",
+  "userAssets" = "userAssets",
 }
