@@ -1,18 +1,18 @@
 /* eslint-disable prettier/prettier */
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import ChatInput from "../../components/ChatInput/ChatInput";
+import CircularProgress from "../../components/Icons/CircularProgress";
+import { SearchIcon } from "../../components/Icons/SearchIcon";
+import Textfield from "../../components/Textfield/Textfield";
 import withPrivateRoute from "../../hocs/withPrivateRoute";
 import SidebarLayout from "../../layouts/SidebarLayout";
-import styled from "styled-components";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ChatInput from "../../components/ChatInput/ChatInput";
-import VideoProjectCard from "./components/VideoProjectCard";
-import { models, chips } from "./data";
-import { useDispatch, useSelector } from "react-redux";
 import { createVideoProjectServer, getVideoProjectServer, resetCreatedProject } from "../../redux/actions/projectAction";
-import { getCreatedProject, getProjectList, getProjectListLoading, getTotalPages, createProjectLoading } from "../../redux/reducers/projectReducer";
-import Textfield from "../../components/Textfield/Textfield";
-import { SearchIcon } from "../../components/Icons/SearchIcon";
-import CircularProgress from "../../components/Icons/CircularProgress";
+import { createProjectLoading, getCreatedProject, getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
+import VideoProjectCard from "./components/VideoProjectCard";
+import { chips, models } from "./data";
 
 const AiVideo = () => {
   const navigate = useNavigate()
@@ -92,12 +92,6 @@ const AiVideo = () => {
   return (
     <Wrapper>
       <SidebarLayout>
-        {isCreatingProject ? (
-          <CreatingProjectWrapper>
-            <CircularProgress size={22} />
-            <CreatingText>Creating your video project...</CreatingText>
-          </CreatingProjectWrapper>
-        ) : (
           <Content>
             <Container>
               <HeroSection>
@@ -119,6 +113,7 @@ const AiVideo = () => {
                   onSelectModel={setSelectedModel}
                   selectedModel={selectedModel}
                   models={models}
+                  showLoading={isCreatingProject}
                 />
               </HeroSection>
 
@@ -151,7 +146,6 @@ const AiVideo = () => {
               </ProjectsSection>
             </Container>
           </Content>
-        )}
       </SidebarLayout>
     </Wrapper>
   );

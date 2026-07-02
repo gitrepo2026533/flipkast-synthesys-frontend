@@ -21,6 +21,8 @@ const Project = () => {
   const [selectedSlide, setSelectedSlide] = useState<any>(null);
   const isLoading = useSelector(getProjectLoading);
 
+  const [currentSlideId, setCurrentSlideId] = useState<number | null>(null);
+
   useEffect(() => {
     if (projectId) {
       dispatch(
@@ -59,10 +61,13 @@ const Project = () => {
           <PageLayout>
             <LeftSideProfileSection />
             <LeftPanelSide
+              currentSlideId={currentSlideId}
             // isDraftSlide={isDraftslide}
             // setIsDraftSlide={setIsDraftSlide}
             />
             <RightPanelSide
+              currentSlideId={currentSlideId}
+              setCurrentSlideId={setCurrentSlideId}
             // isDraftSlide={isDraftslide}
             // setIsDraftSlide={setIsDraftSlide}
             // currentSlides={currentSlides}

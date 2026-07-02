@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import styled from "styled-components";
-import ActionMenu from "../../../components/ActionMenu/ActionMenu";
-import MenuItem from "../../../components/ActionMenu/MenuItem";
+// ActionMenu/MenuItem not used here
 import IconButton, { IconButtonThemes } from "../../../components/Button/IconButton";
-import { AnimatedTransitionIcon, OptionsIcon, PlusIcon } from "../../../components/Icons/Icons";
+import { AnimatedTransitionIcon, PlusIcon } from "../../../components/Icons/Icons";
 import { PlayIcon } from "../../../components/Icons/PlayIcon";
 import { Popups, updatePopup } from "../../../redux/actions/popupsActions";
 import { ProfileHumanSidebarType } from "../../../types/human";
@@ -19,7 +18,11 @@ interface Props {
   handleDeleteScene: (id: number) => void;
   handleChangeActiveScene: (id: number) => void;
   setActiveSidebarItem: (type: ProfileHumanSidebarType) => void;
+  orientation?: "vertical" | "horizontal";
+  responsive?: boolean;
 }
+
+type Orientation = "vertical" | "horizontal";
 
 const Timeline = ({
   scenes,
@@ -29,9 +32,26 @@ const Timeline = ({
   handleDeleteScene,
   handleChangeActiveScene,
   setActiveSidebarItem,
+  orientation: orientationProp,
+  responsive = true,
 }: Props) => {
   const dispatch = useDispatch();
   const [menuOpen, setMenuOpen] = useState<number>();
+  const defaultOrientation = () =>
+    typeof window !== "undefined" && window.innerWidth < 720 ? "horizontal" : "vertical";
+
+  const [orientationState, setOrientationState] = useState((orientationProp ?? defaultOrientation()) as Orientation);
+
+  React.useEffect(() => {
+    if (!responsive || orientationProp) return;
+
+    const onResize = () => setOrientationState(window.innerWidth < 720 ? "horizontal" : "vertical");
+    window.addEventListener("resize", onResize);
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, [responsive, orientationProp]);
+
+  const orientation = (orientationProp ?? orientationState) as Orientation;
 
   const handleOpenMenu = (id: number) => {
     setMenuOpen(id);
@@ -57,12 +77,13 @@ const Timeline = ({
   };
 
   return (
-    <Wrapper>
-      <ImagesWrapper>
+    <Wrapper className={`orientation-${orientation}`}>
+      <ImagesWrapper className={`orientation-${orientation}`}>
         {scenes.map((scene, index: number) => (
           <ScenesItem
+            className={`orientation-${orientation}`}
             isActive={activeSceneId === scene.id}
-            src={scene.background}
+            src={"/images/mock.png"}
             key={scene.id}
             onClick={() => handleChangeActiveScene(scene.id)}
           >
@@ -75,9 +96,11 @@ const Timeline = ({
               dublicateScene={dublicateScene}
               handleDeleteScene={handleDeleteScene}
             />
-            <SceneButtonWrapper>
+            <SceneButtonWrapper
+              className={`orientation-${orientation} ${index === scenes.length - 1 ? "is-last" : ""}`}
+            >
               {index === scenes.length - 1 ? (
-                <IconButton onClick={handleOpenTemplatePopup} icon={<PlusIcon />} />
+                <IconButton onClick={handleAddScene} icon={<PlusIcon />} />
               ) : (
                 <IconButton
                   onClick={handleOpenTransitionTab}
@@ -88,10 +111,15 @@ const Timeline = ({
             </SceneButtonWrapper>
           </ScenesItem>
         ))}
-        {!scenes.length && <IconButton onClick={addScene} icon={<PlusIcon />} />}
+        {!scenes.length && (
+          <EmptyState>
+            <IconButton onClick={addScene} icon={<PlusIcon />} />
+          </EmptyState>
+        )}
+        {/* horizontal add button moved to last slide's SceneButtonWrapper */}
       </ImagesWrapper>
-      <Bottom>
-        <TimeLineWrapper>
+      {/* <Bottom className={`orientation-${orientation}`}>
+        <TimeLineWrapper className={`orientation-${orientation}`}>
           <IconButton iconButtonTheme={IconButtonThemes.Rounded} icon={<PlayIcon />} />
           <TimeLine>
             {timelineMap.map((time) => (
@@ -99,8 +127,8 @@ const Timeline = ({
             ))}
           </TimeLine>
         </TimeLineWrapper>
-        <EstimatedTime>Estimated time: 00:49</EstimatedTime>
-      </Bottom>
+        <EstimatedTime className={`orientation-${orientation}`}>Estimated time: 00:49</EstimatedTime>
+      </Bottom> */}
     </Wrapper>
   );
 };
@@ -110,9 +138,15 @@ const Wrapper = styled.div`
   width: 120px;
   flex-direction: column;
   gap: 16px;
-  overflow: hidden auto;
   position: relative;
   max-height: calc(100% - 89px);
+
+  &.orientation-horizontal {
+    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    height: 140px;
+  }
 
   ::-webkit-scrollbar {
     width: 0;
@@ -125,10 +159,21 @@ const ImagesWrapper = styled.div`
   align-items: center;
   gap: 16px;
 
+  &.orientation-horizontal {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px;
+  }
+
   img {
     width: 120px;
     height: 70px;
     border-radius: 16px;
+  }
+
+  &.orientation-horizontal img {
+    width: 160px;
+    height: 90px;
   }
 `;
 
@@ -144,6 +189,11 @@ const ScenesItem = styled.div<{ src: string | BackgroundColor; isActive: boolean
   position: relative;
   cursor: pointer;
   border: 2px solid ${({ isActive }) => (isActive ? "rgb(0, 154, 247)" : "transparent")};
+  &.orientation-horizontal {
+    width: 160px;
+    height: 90px;
+    margin-bottom: 8px;
+  }
 `;
 
 const SceneButtonWrapper = styled.div`
@@ -156,6 +206,14 @@ const SceneButtonWrapper = styled.div`
   & > button {
     width: 24px;
     height: 24px;
+  }
+
+  &.orientation-horizontal.is-last {
+    bottom: auto;
+    left: auto;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 `;
 
@@ -174,6 +232,12 @@ const TimeLineWrapper = styled.div`
       height: 14px;
     }
   }
+
+  &.orientation-horizontal {
+    margin-top: 0;
+    width: auto;
+    margin-left: 8px;
+  }
 `;
 
 const Bottom = styled.div`
@@ -184,6 +248,16 @@ const Bottom = styled.div`
   background: ${({ theme }) => theme.primaryBackground};
   z-index: 10;
   margin-top: auto;
+
+  &.orientation-horizontal {
+    width: auto;
+    margin-top: auto;
+    margin-left: auto; /* pushes to end of row */
+  }
+
+  &.orientation-vertical {
+    width: 120px;
+  }
 `;
 
 const TimeLine = styled.div`
@@ -231,6 +305,26 @@ const EstimatedTime = styled.span`
   opacity: 0.4;
   width: 97px;
   margin-top: -10px;
+
+  &.orientation-horizontal {
+    margin-top: 0;
+    width: auto;
+    margin-left: 8px;
+  }
+`;
+
+const EmptyState = styled.div`
+  width: 100%;
+  min-height: 90px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  button {
+    width: 32px;
+    height: 32px;
+  }
 `;
 
 const timelineMap = [

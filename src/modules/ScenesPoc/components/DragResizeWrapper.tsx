@@ -14,8 +14,9 @@ interface Props {
   dragHandleClassName?: string;
   editableTextId: number;
   updatePosition: (position: Position, id: number, objType: ObjectTypes) => void;
-  updateSize: (size: ResizableDelta, id: number, objType: ObjectTypes) => void;
+  updateSize: (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => void;
   handleChangeActiveObject: (id: number) => void;
+  scale?: number;
 }
 
 const DragResizeWrapper = ({
@@ -32,8 +33,10 @@ const DragResizeWrapper = ({
   updatePosition,
   updateSize,
   handleChangeActiveObject,
+  scale,
 }: ResizeDragObj & Props) => (
   <Rnd
+    scale={scale || 1}
     onClick={(event: any) => event.stopPropagation()}
     dragHandleClassName={dragHandleClassName}
     default={{
@@ -56,6 +59,8 @@ const DragResizeWrapper = ({
     disableDragging={editableTextId === id}
     style={{ zIndex: index }}
     lockAspectRatio={lockRatio}
+    maxWidth="100%"
+    maxHeight="100%"
   >
     {children}
   </Rnd>

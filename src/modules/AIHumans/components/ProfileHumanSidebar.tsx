@@ -1,16 +1,16 @@
-import React, { useState } from "react";
 import styled from "styled-components";
-import { ProfileHumanSidebarType } from "../../../types/human";
 import IconButton, { IconButtonThemes } from "../../../components/Button/IconButton";
 import {
   CircleIcon,
   ImageIcon,
   LinkIcon,
+  LogoIcon,
   MusicIcon,
   ProfileIcon,
   TextIcon,
-  Logo,
 } from "../../../components/Icons/Icons";
+import { ScriptsIcon } from "../../../components/Icons/Scripts";
+import { ProfileHumanSidebarType } from "../../../types/human";
 
 interface Props {
   activeSidebarItem: ProfileHumanSidebarType;
@@ -20,10 +20,11 @@ interface Props {
 const humansSidebar = [
   { id: 1, icon: <ProfileIcon />, type: ProfileHumanSidebarType.Humatar },
   { id: 2, icon: <ImageIcon />, type: ProfileHumanSidebarType.Background },
-  { id: 3, icon: <TextIcon />, type: ProfileHumanSidebarType.Text },
-  { id: 5, icon: <CircleIcon />, type: ProfileHumanSidebarType.Shapes },
-  { id: 6, icon: <MusicIcon />, type: ProfileHumanSidebarType.Soundtrack },
-  { id: 7, icon: <LinkIcon />, type: ProfileHumanSidebarType.Transitions },
+  { id: 3, icon: <ScriptsIcon />, type: ProfileHumanSidebarType.Script },
+  // { id: 4, icon: <TextIcon />, type: ProfileHumanSidebarType.Text },
+  // { id: 5, icon: <CircleIcon />, type: ProfileHumanSidebarType.Shapes },
+  // { id: 6, icon: <MusicIcon />, type: ProfileHumanSidebarType.Soundtrack },
+  // { id: 7, icon: <LinkIcon />, type: ProfileHumanSidebarType.Transitions },
 ];
 
 const ProfileHumanSidebar = ({ activeSidebarItem, setActiveSidebarItem }: Props) => {
@@ -40,7 +41,7 @@ const ProfileHumanSidebar = ({ activeSidebarItem, setActiveSidebarItem }: Props)
     <Wrapper>
       <Content>
         <ImageWrapper>
-          <Logo />
+          <LogoIcon />
         </ImageWrapper>
         <ButtonsWrapper>
           {humansSidebar.map(({ id, icon, type }) => (

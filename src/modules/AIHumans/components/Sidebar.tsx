@@ -4,24 +4,94 @@ import styled from "styled-components";
 import { ProfileHumanSidebarType } from "../../../types/human";
 
 import Button, { ButtonThemes } from "../../../components/Button/Button";
-import IconButton, { IconButtonThemes } from "../../../components/Button/IconButton";
 import BackgroundSidebar from "../../../components/HumanSidebars/BackgroundSidebar";
 import HumatarSidebar from "../../../components/HumanSidebars/HumatarSidebar";
+import ScriptSidebar from "../../../components/HumanSidebars/ScriptSidebar";
 import ShapesSidebar from "../../../components/HumanSidebars/ShapesSidebar";
 import SoundtrackSidebar from "../../../components/HumanSidebars/SoundtrackSidebar";
 import TransitionSidebar from "../../../components/HumanSidebars/TransitionSidebar";
 import HumanSwitcher from "../../../components/HumanSwitcher/HumanSwitcher";
+import { DropdownDelete, ImportIcon, SearchIcon } from "../../../components/Icons/Icons";
 import Textfield from "../../../components/Textfield/Textfield";
-import TitleWithAction from "./TitleWithAction";
 import AddTextPanel from "../../ScenesPoc/components/AddTextPanel";
 import ObjectChips from "../../ScenesPoc/components/ObjectChips";
 import PropertiesPanel from "../../ScenesPoc/components/PropertiesPanel";
-import { DropdownDelete, ImportIcon, SearchFilterIcon, SearchIcon } from "../../../components/Icons/Icons";
+import TitleWithAction from "./TitleWithAction";
 
-import { BackgroundProps, humans } from "../../../mocks/humans";
+import { useDispatch, useSelector } from "react-redux";
+import { getUserAssets } from "../../../redux/reducers/profileReducer";
+import { BackgroundProps } from "../../../mocks/humans";
 import { ObjectTypes, SceneObject } from "../../../types/scene";
-import { useDispatch } from "react-redux";
-import { Popups, updatePopup } from "../../../redux/actions/popupsActions";
+
+import { useEffect } from "react";
+
+const HumatarSidebarWrapper = ({ updateSize, handleAddAvatar }: any) => {
+  const dispatch = useDispatch();
+  const [aiHumanActors, setAiHumanActors] = useState<any[]>([]);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchActors = async () => {
+      if (loading || (!hasMore && pageNumber > 1)) return;
+      setLoading(true);
+      try {
+        const response: any = await dispatch({
+          type: "GET_AI_HUMAN_ACTORS_SERVER",
+          payload: {
+            request: {
+              method: "POST",
+              url: "/aIHumanActor/list",
+              data: {
+                pageNumber,
+                keyword: "",
+                bookmarked: false,
+                pageSize: 34,
+                category: ["Humatars", "Professional", "Seated", "Casual", "Mobile", "Photo"],
+              },
+            },
+          },
+        });
+        const data = response?.payload?.data?.data || [];
+        const formattedData = data.map((actor: any) => ({
+          id: actor.aiHumanActorId,
+          image: actor.photo,
+        }));
+
+        if (pageNumber === 1) {
+          setAiHumanActors(formattedData);
+        } else {
+          setAiHumanActors((prev) => [...prev, ...formattedData]);
+        }
+
+        if (data.length < 34) {
+          setHasMore(false);
+        }
+      } catch (e) {
+        console.error("Failed to fetch AI human actors", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchActors();
+  }, [dispatch, pageNumber]);
+
+  const onLoadMore = () => {
+    if (hasMore && !loading) {
+      setPageNumber((prev) => prev + 1);
+    }
+  };
+
+  return (
+    <HumatarSidebar
+      data={aiHumanActors}
+      updateSize={updateSize}
+      handleAddAvatar={handleAddAvatar}
+      onLoadMore={onLoadMore}
+    />
+  );
+};
 
 const Sidebar = ({
   element,
@@ -35,22 +105,39 @@ const Sidebar = ({
   handleAddAvatar,
   handleAddShape,
   updateSize,
+  handleScriptChange,
 }: any): any => {
   const dispatch = useDispatch();
 
   switch (element.type) {
     case ProfileHumanSidebarType.Background: {
-      const [activeBackground, setActiveBackground] = useState(element?.data[0]?.type);
+      const userAssets = useSelector(getUserAssets);
+      const mockBgData = element.data || [];
+      const backgroundData = mockBgData.map((category: any) => {
+        const assets =
+          userAssets?.map((asset: any) => ({
+            id: asset.userAssetID,
+            image: asset.path,
+            video: asset.path,
+          })) || [];
+        return {
+          ...category,
+          data: assets,
+        };
+      });
+
+      const [activeBackground, setActiveBackground] = useState(backgroundData[0]?.type);
       const handleActiveBackground = (background: BackgroundProps) => setActiveBackground(background);
 
       return (
         <Wrapper>
           <TitleWithAction title="Background">
-            <HumanSwitcher data={element.data} active={activeBackground} handleActive={handleActiveBackground} />
-            <Textfield placeholder="Search for images/videos…" startAdornment={<SearchIcon />} />
+            {/* <HumanSwitcher data={backgroundData} active={activeBackground} handleActive={handleActiveBackground} />
+            <Textfield placeholder="Search for images/videos…" startAdornment={<SearchIcon />} /> */}
             <BackgroundSidebar
               active={activeBackground}
-              data={element.data}
+              data={backgroundData}
+              hideEdit={true}
               handleBackgroundChange={handleBackgroundChange}
             />
           </TitleWithAction>
@@ -60,30 +147,8 @@ const Sidebar = ({
     case ProfileHumanSidebarType.Humatar:
       return (
         <Wrapper>
-          <TitleWithAction
-            type="humatar"
-            title="Humatar"
-            action={
-              <>
-                <IconButton
-                  iconButtonTheme={IconButtonThemes.Transparent}
-                  icon={<SearchFilterIcon />}
-                  onClick={() =>
-                    dispatch(
-                      updatePopup({
-                        popup: Popups.aIHumansPopup,
-                        status: true,
-                        prefilled: {
-                          humans,
-                        },
-                      }),
-                    )
-                  }
-                />
-              </>
-            }
-          >
-            <HumatarSidebar data={element.data} updateSize={updateSize} handleAddAvatar={handleAddAvatar} />
+          <TitleWithAction type="humatar" title="Humatar">
+            <HumatarSidebarWrapper updateSize={updateSize} handleAddAvatar={handleAddAvatar} />
           </TitleWithAction>
         </Wrapper>
       );
@@ -104,6 +169,14 @@ const Sidebar = ({
             action={<Button buttonTheme={ButtonThemes.Secondary} icon={<ImportIcon />} text="Upload" />}
           >
             <SoundtrackSidebar data={element.data} />
+          </TitleWithAction>
+        </Wrapper>
+      );
+    case ProfileHumanSidebarType.Script:
+      return (
+        <Wrapper>
+          <TitleWithAction title="Script">
+            <ScriptSidebar currentScript={currentScene?.script} handleScriptChange={handleScriptChange} />
           </TitleWithAction>
         </Wrapper>
       );

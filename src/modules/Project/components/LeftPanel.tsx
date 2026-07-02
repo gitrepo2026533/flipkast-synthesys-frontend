@@ -1,17 +1,28 @@
 /* eslint-disable prettier/prettier */
-import styled, { keyframes } from "styled-components";
-import ChatInput from "../../../components/ChatInput/ChatInput";
-import { useEffect, useRef, useState } from "react";
-import { chips, models } from "../data";
-import { useParams } from "react-router-dom";
-import { updateVideoProjectServer, getProjectSlideServer, lockVideoProjectServer } from "../../../redux/actions/projectAction";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
-import CloseIcon from "../../../components/Icons/CloseIcon";
-import { VideoThumbIcon } from "../../../components/Icons/VideoThumbIcon";
-import { ExpandIcon } from "../../../components/Icons/ExpandIcon";
+import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import styled, { keyframes } from "styled-components";
+import AvatarSelectorModal from "../../../components/AvatarSelectorModal/AvatarSelectorModal";
+import BackgroundSelectorModal from "../../../components/BackgroundSelectorModal/BackgroundSelectorModal";
+import ChatInput from "../../../components/ChatInput/ChatInput";
 import { AiAvatarIcon } from "../../../components/Icons/AiAvatarIcon";
+import CloseIcon from "../../../components/Icons/CloseIcon";
+import { ExpandIcon } from "../../../components/Icons/ExpandIcon";
+import { ImageIcon, ProfileIcon } from "../../../components/Icons/Icons";
+import { VideoThumbIcon } from "../../../components/Icons/VideoThumbIcon";
 import PopupModel from "../../../components/PopupModel/PopupModel";
+import { sidebar } from "../../../mocks/humans";
+import { getProjectSlideServer, lockVideoProjectServer, ProjectType, updateVideoProjectServer } from "../../../redux/actions/projectAction";
+import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
+import { IHuman, ProfileHumanSidebarType } from "../../../types/human";
+import { chips, models } from "../data";
+import { getActorsList } from "../../../redux/reducers/actorReducer";
+import { getActorsServer } from "../../../redux/actions/actorActions";
+import { getFullImageUrl } from "../../../lib/getFullImageUrl";
+import { getAllUserAssetsServer } from "../../../redux/actions/profileActions";
+import { getUserAssets } from "../../../redux/reducers/profileReducer";
 
 interface Paragraph {
   projectParagraphId: number;
@@ -22,7 +33,11 @@ interface Paragraph {
   outputVideo?: string;
 }
 
-const LeftPanelSide = () => {
+interface LeftPanelProps {
+  currentSlideId?: number | null;
+}
+
+const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
   const { projectId } = useParams();
   const [prompt, setPrompt] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -39,34 +54,98 @@ const LeftPanelSide = () => {
   const isDraftSlide = useSelector(getIsDraftSlide);
   const draftSlideData = useSelector(getDraftSlideData);
 
+  const isAvatarProject = projectData?.projectTypeId === ProjectType.AVT;
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<IHuman | null>(null);
+  const [showBgModal, setShowBgModal] = useState(false);
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
+
   const paragraphs: Paragraph[] = slideData?.projectParagraphs;
+
+  const actorsList = useSelector(getActorsList);
+
+  useEffect(() => {
+    dispatch(getActorsServer({ pageNumber: 1 }));
+    dispatch(getAllUserAssetsServer({
+      pageNumber: 1, pageSize: 60, assetTypeId: 11,
+      sortWith: "insertDateTime",
+      sortByDesc: true,
+    }));
+  }, [dispatch]);
+
+  const avatarData = actorsList?.map((actor) => ({
+    id: actor.actorId,
+    image: getFullImageUrl(actor.photo),
+  }));
+
+  const userAssets = useSelector(getUserAssets);
+  const backgroundData = useMemo(() => {
+    const assets = userAssets?.map((asset: any) => ({
+      id: asset.userAssetID,
+      image: asset.path,
+    })) || [];
+
+    const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+    return mockBgData.map((category: any) => {
+        return {
+          ...category,
+          data: assets,
+        };
+    });
+  }, [userAssets]);
 
   const handleSend = async () => {
     if (!prompt.trim()) return;
+    if (isAvatarProject && (!selectedAvatar || !selectedBackground)) {
+      toast.error("Please select both an Avatar and a Background before generating.");
+      return;
+    }
+    let bgId: string | number | undefined = isAvatarProject ? selectedBackground! : undefined;
+    if (isAvatarProject && backgroundData && selectedBackground) {
+      backgroundData.forEach((category: any) => {
+        if (category.data) {
+          const match = category.data.find((b: any) => b.image === selectedBackground || b.video === selectedBackground);
+          if (match) bgId = match.id;
+        }
+      });
+    }
+
     setAttachedFiles([]);
     setPrompt("");
     setSelectedModel(models[0]);
-    dispatch(
-      updateVideoProjectServer({
-        title: projectData?.title,
-        projectId: Number(projectId),
-        slides: [
-          {
-            slideId: slideData.slideId,
-            order: slideData.order,
-            slideBackgroundColor: slideData.slideBackgroundColor,
-            projectParagraphs: [
-              {
-                projectParagraphId: 0,
-                order: 1,
-                actorId: 12270,
-                text: prompt.trim(),
-              },
-            ],
-          },
-        ],
-      })
-    );
+    setIsTyping(true);
+    try {
+      await dispatch(
+        updateVideoProjectServer({
+          title: projectData?.title,
+          projectId: Number(projectId),
+          slides: [
+            {
+              slideId: slideData.slideId,
+              order: slideData.order,
+              slideBackgroundColor: isAvatarProject ? selectedBackground! : slideData.slideBackgroundColor,
+              backgroundId: bgId,
+              projectParagraphs: [
+                {
+                  projectParagraphId: 0,
+                  order: 1,
+                  actorId: isAvatarProject ? selectedAvatar!.id : 12270,
+                  text: prompt.trim(),
+                },
+              ],
+            },
+          ],
+        })
+      );
+    } finally {
+      setIsTyping(false);
+    }
+    
+    if (isAvatarProject) {
+      setSelectedAvatar(null);
+      setSelectedBackground(null);
+      setPreviewChips([]);
+    }
     // dispatch(getProjectSlideServer(Number(projectId), Number(slideData.slideId)));
   };
 
@@ -95,18 +174,44 @@ const LeftPanelSide = () => {
   };
 
   useEffect(() => {
+    if (!projectData) return;
+
     if (isDraftSlide && draftSlideData?.slideId === 0) {
       setSlideData(draftSlideData);
-      return;
+    } else {
+      const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+      const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
+      
+      if (activeSlide) {
+        setSlideData(activeSlide);
+      } else if (projectData?.slides?.length) {
+        setSlideData(projectData.slides[0]);
+      }
     }
-    if (projectData?.slides?.length) {
-      setSlideData(projectData.slides[0]);
-    }
-  }, [projectData, draftSlideData, isDraftSlide]);
+  }, [projectData, draftSlideData, isDraftSlide, currentSlideId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [paragraphs, isTyping]);
+
+  const openAvatarSelector = () => {
+    setShowAvatarModal(true);
+  };
+
+  const extraLeftActions = isAvatarProject ? (
+    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+      <ToolbarActions>
+        <ToolbarButton onClick={openAvatarSelector} title="Select Avatar">
+          <ProfileIcon />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => setShowBgModal(true)} title="Select Background">
+          <ImageIcon />
+        </ToolbarButton>
+      </ToolbarActions>
+    </div>
+  ) : null;
+
+  const [previewChips, setPreviewChips] = useState<Array<{ label: string; title: string; image: any; onRemove: () => void }>>([]);
 
   return (
     <LeftPanel>
@@ -357,6 +462,8 @@ const LeftPanelSide = () => {
             onSelectModel={setSelectedModel}
             selectedModel={selectedModel}
             models={models}
+            extraLeftActions={extraLeftActions}
+            previewChips={previewChips}
           />
         </InputArea>
       </PanelBody>
@@ -370,6 +477,59 @@ const LeftPanelSide = () => {
           </LightboxClose>
         </Lightbox>
       )}
+
+      {/* Avatar Selector Modal */}
+      <AvatarSelectorModal
+        open={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        avatarData={avatarData}
+        selectedAvatarId={selectedAvatar?.id}
+        onSelect={(avatar) => {
+          setSelectedAvatar(avatar);
+          setPreviewChips(prev => {
+            const filtered = prev.filter(c => c.label !== "Avatar");
+            return [
+              ...filtered,
+              {
+                label: "Avatar",
+                title: `Avatar ${avatar.id}`,
+                image: avatar.imageSrc || "https://picsum.photos/100",
+                onRemove: () => {
+                  setSelectedAvatar(null);
+                  setPreviewChips(prev => prev.filter(c => c.label !== "Avatar"));
+                }
+              },
+            ];
+          });
+          setShowAvatarModal(false);
+        }}
+      />
+
+      {/* Background Selector Modal */}
+      <BackgroundSelectorModal
+        open={showBgModal}
+        onClose={() => setShowBgModal(false)}
+        backgroundData={backgroundData}
+        onSelect={(src) => {
+          setSelectedBackground(src);
+          setPreviewChips(prev => {
+            const filtered = prev.filter(c => c.label !== "Background");
+            return [
+              ...filtered,
+              {
+                label: "Background",
+                title: "Selected BG",
+                image: src,
+                onRemove: () => {
+                  setSelectedBackground(null);
+                  setPreviewChips(prev => prev.filter(c => c.label !== "Background"));
+                },
+              },
+            ];
+          });
+          setShowBgModal(false);
+        }}
+      />
     </LeftPanel>
   );
 };
@@ -1002,6 +1162,35 @@ const SlideStatusBadge = styled.div<{ $active?: boolean }>`
     $active
       ? "rgba(52, 199, 89, 0.3)"
       : "rgba(255, 77, 79, 0.3)"};
+`;
+
+const ToolbarActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const ToolbarButton = styled.button`
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
+  background: ${({ theme }) => theme.editorDropDownContent};
+  color: ${({ theme }) => theme.editorFileUpload};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+  &:hover {
+    background: ${({ theme }) => theme.menuListItemActive};
+    color: ${({ theme }) => theme.primaryText};
+    transform: translateY(-1px);
+  }
 `;
 
 export default LeftPanelSide;

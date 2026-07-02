@@ -17,4 +17,6 @@ export const pages = {
   apiAccess: () => "/api-access",
   aiVideo: () => "/ai-video",
   project: () => "/ai-video/projects/:projectId",
+  aiHumansProject: () => "/ai-humans/projects/:projectId",
+  aiAvatar: () => "/ai-avatar",
 };

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Position, ResizableDelta } from "react-rnd";
-import { Scene as SceneType, TextTypes, TextAlign, ShapeTypes, ObjectTypes, Text, SceneObject } from "../types/scene";
+import { ObjectTypes, SceneObject, Scene as SceneType, ShapeTypes, TextAlign, TextTypes } from "../types/scene";
 import { useVideoSceneHistory } from "./useVideoSceneHistory";
 
 const DEFAULT_OBJECT_POSITION = { x: 10, y: 10 };
 
 const DEFAULT_TEXT_SIZE = { width: 160, height: 40 };
-const DEFAULT_AVATAR_SIZE = { width: 100, height: 100 };
+const DEFAULT_AVATAR_POSITION = { x: 0, y: 0 };
+const DEFAULT_AVATAR_SIZE = { width: "100%", height: "100%" };
 const DEFAULT_SHAPE_SIZE = { width: 100, height: 100 };
 
 enum ChangeLayer {
@@ -72,9 +73,20 @@ export const useVideoEditor = () => {
       activeObjectId: 0,
       editableTextId: 0,
       objects: [],
+      script: "",
     };
     setScenes((scenes) => [...scenes, newScene]);
     setActiveSceneId(rand);
+  };
+
+  const setScenesExternal = (newScenes: SceneType[]) => {
+    setScenes(newScenes);
+    setActiveSceneId((prevId) => {
+      if (newScenes.some((scene) => scene.id === prevId)) {
+        return prevId;
+      }
+      return newScenes.length > 0 ? newScenes[0].id : NaN;
+    });
   };
 
   const handleDeleteScene = (id: number) => {
@@ -133,7 +145,7 @@ export const useVideoEditor = () => {
       type: ObjectTypes.avatars,
       object: {
         id: rand,
-        position: DEFAULT_OBJECT_POSITION,
+        position: DEFAULT_AVATAR_POSITION,
         size: DEFAULT_AVATAR_SIZE,
         src,
       },
@@ -179,7 +191,7 @@ export const useVideoEditor = () => {
     });
   };
 
-  const updateSize = (size: ResizableDelta, id: number, objType: ObjectTypes) => {
+  const updateSize = (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => {
     if (!currentScene) return;
     updateScene({
       ...currentScene,
@@ -260,6 +272,11 @@ export const useVideoEditor = () => {
     }
   };
 
+  const handleScriptChange = (script: string) => {
+    if (!currentScene) return;
+    updateScene({ ...currentScene, script: script });
+  };
+
   useEffect(() => {
     addEventListener("keydown", handleKeyboardPress);
 
@@ -283,8 +300,10 @@ export const useVideoEditor = () => {
     handleBackgroundChange,
     deleteAllText,
     setEditableTextId,
+    handleScriptChange,
     scenes: currentScenes || scenes,
     currentScene,
     activeSceneId,
+    setScenesExternal,
   };
 };

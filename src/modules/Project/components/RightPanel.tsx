@@ -1,14 +1,13 @@
 /* eslint-disable prettier/prettier */
-import styled, { keyframes, css } from "styled-components";
 import { useEffect, useRef, useState } from "react";
-import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
 import { useDispatch, useSelector } from "react-redux";
-import { clearActiveDraftSlide, getProjectSlideServer, setActiveDraftSlide } from "../../../redux/actions/projectAction";
-import { deleteProjectSlideServer, updateSlideStatusServer } from "../../../redux/actions/projectAction";
-import PopupModel from "../../../components/PopupModel/PopupModel";
-import { PlayIcon } from "../../../components/Icons/PlayIcon";
-import { MoreIcon } from "../../../components/Icons/MoreIcon";
+import styled, { css, keyframes } from "styled-components";
 import { AddIcon } from "../../../components/Icons/AddIcon";
+import { MoreIcon } from "../../../components/Icons/MoreIcon";
+import { PlayIcon } from "../../../components/Icons/PlayIcon";
+import PopupModel from "../../../components/PopupModel/PopupModel";
+import { clearActiveDraftSlide, deleteProjectSlideServer, getProjectSlideServer, setActiveDraftSlide, updateSlideStatusServer } from "../../../redux/actions/projectAction";
+import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
 
 const formatTime = (s: number) => {
   if (isNaN(s)) return "0:00";
@@ -22,7 +21,12 @@ interface ActiveSlideInfo {
   isActive: boolean;
 }
 
-const RightPanelSide = () => {
+interface RightPanelProps {
+  currentSlideId: number | null;
+  setCurrentSlideId: (id: number | null) => void;
+}
+
+const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) => {
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -31,7 +35,6 @@ const RightPanelSide = () => {
   const projectSlides = useSelector(getSlidesData);
   const [slides, setSlides] = useState<any>([]);
   const [slideData, setSlideData] = useState<any>({});
-  const [currentSlideId, setCurrentSlideId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | number | null>(null);
   const [activeSlideInfo, setActiveSlideInfo] = useState<ActiveSlideInfo | null>(null);
@@ -154,9 +157,18 @@ const RightPanelSide = () => {
 
   useEffect(() => {
     if (!projectData) return;
-    setSlideData(projectData?.slides?.[0] || {});
-    setCurrentSlideId(projectData?.slides?.[0]?.slideId || null);
-  }, [projectData]);
+
+    const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+    const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
+
+    if (activeSlide) {
+      setSlideData(activeSlide);
+      if (!currentSlideId) setCurrentSlideId(activeSlide.slideId);
+    } else {
+      setSlideData(projectData.slides?.[0] || {});
+      setCurrentSlideId(projectData.slides?.[0]?.slideId || null);
+    }
+  }, [projectData, currentSlideId]);
 
   useEffect(() => {
     if (projectSlides) setSlides(projectSlides);
@@ -228,7 +240,7 @@ const RightPanelSide = () => {
         <SlidesTrack>
           {slides?.map((slide: any, idx: number) => {
             const isActive = slideData?.slideId === slide.slideId;
-            const thumb = slide?.backgroundAsset?.path ?? "https://picsum.photos/536/354";
+            const thumb = slide?.backgroundAsset?.path ?? "/images/mock.png";
             return (
               <SlideFlowWrapper key={slide.slideId}>
                 <SlideItem $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>

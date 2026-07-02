@@ -14,6 +14,7 @@ export const SET_PAGE_PROJECTS = "SET_PAGE_PROJECTS";
 export const CREATE_VIDEO_PROJECT = "CREATE_VIDEO_PROJECT";
 // video project actions
 export const CREATE_VIDEO_PROJECT_SERVER = "CREATE_VIDEO_PROJECT_SERVER";
+export const CREATE_AVATAR_PROJECT_SERVER = "CREATE_AVATAR_PROJECT_SERVER";
 export const GET_VIDEO_PROJECT_SERVER = "GET_VIDEO_PROJECT_SERVER";
 export const GET_PROJECT_SLIDE_SERVER = "GET_PROJECT_SLIDE_SERVER";
 export const GET_VIDEO_BY_PROJECT_ID_SERVER = "GET_VIDEO_BY_PROJECT_ID_SERVER";
@@ -54,6 +55,16 @@ interface createVideoProjectServerProps {
   prompt: string;
 }
 
+// Updated interface for avatar creation payload
+interface createAvatarProjectServerProps {
+  script: string;
+  avatarImage?: string;
+  backgroundImage?: string;
+  avatarId: number;
+  backgroundId: string | number;
+  voiceId?: number;
+}
+
 interface GetVideoProjectServerProps {
   pageNumber: number;
   pageSize: number;
@@ -72,10 +83,11 @@ interface lockVideoProjectServerProps {
 
 export enum ProjectType {
   TTI = 1, //AI Voices
-  HSS = 2, //AI Humans
+  VIDEO = 2, //AI Video,
   FS = 3, //Faceswap
   T2I = 4, //Synthesys Visual
   BG = 5, //Change Image/Video Background
+  AVT = 6, //AI Avatar,
 }
 
 interface DeleteProjectProps {
@@ -87,6 +99,7 @@ export interface updateVideoProjectPayload {
     slideId: number;
     order: number;
     slideBackgroundColor?: string;
+    backgroundId?: string | number;
     audioPath?: string;
     projectParagraphs?: {
       projectParagraphId: number;
@@ -231,6 +244,7 @@ export const createVideoProjectServer = ({ prompt }: createVideoProjectServerPro
       method: "POST",
       url: "/project/create",
       data: {
+        projectTypeId: ProjectType.AVT,
         slides: [
           {
             slideId: 0,
@@ -241,6 +255,44 @@ export const createVideoProjectServer = ({ prompt }: createVideoProjectServerPro
                 order: 0,
                 actorId: 12270,
                 text: prompt,
+              },
+            ],
+          },
+        ],
+      },
+    },
+  },
+});
+
+export const createAvatarProjectServer = ({
+  avatarImage,
+  backgroundImage,
+  script,
+  avatarId,
+  backgroundId,
+  voiceId,
+}: createAvatarProjectServerProps) => ({
+  type: CREATE_AVATAR_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: "/project/create",
+      data: {
+        projectTypeId: ProjectType.AVT,
+        slides: [
+          {
+            slideId: 0,
+            order: 1,
+            slideBackgroundColor: backgroundId ? String(backgroundId) : undefined,
+            projectParagraphs: [
+              {
+                projectParagraphId: 0,
+                order: 0,
+                avatarImage: avatarImage,
+                backgroundImage: backgroundImage,
+                actorId: avatarId,
+                voiceId: voiceId,
+                text: script,
               },
             ],
           },

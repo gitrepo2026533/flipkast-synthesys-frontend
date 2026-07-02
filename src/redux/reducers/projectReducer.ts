@@ -1,34 +1,35 @@
+import * as Sentry from "@sentry/react";
+import { toast } from "react-toastify";
+import { checkIfZoneCached } from "../../lib/editorUtils";
+import { SentryErrors } from "../../lib/sentry";
+import { Project, ProjectModules, Slide, Zone } from "../../types/project";
 import { StoreType } from "../../types/store";
-import { Project, ProjectList, LoadingStyles, ProjectModules, Zone, Slide } from "../../types/project";
+import { GENERATE_VOICE_SERVER } from "../actions/actorActions";
 import {
+  CLEAR_ACTIVE_DRAFT_SLIDE,
   CLEAR_CURRENT_PROJECT,
+  CREATE_AVATAR_PROJECT_SERVER,
   CREATE_PROJECT_SERVER,
   CREATE_VIDEO_PROJECT_SERVER,
   DELETE_PROJECT_SERVER,
   DELETE_PROJECT_SLIDE_SERVER,
+  GET_PREVIEW_PROJECT_SERVER,
   GET_PROJECT_LIST_SERVER,
   GET_PROJECT_SERVER,
+  GET_PROJECT_SLIDE_SERVER,
   GET_VIDEO_BY_PROJECT_ID_SERVER,
   GET_VIDEO_PROJECT_SERVER,
+  LOCK_VIDEO_PROJECT_SERVER,
+  MERGE_VIDEOS_PROJECT_SERVER,
   PLAY_AUDIO,
   RESET_CREATED_PROJECT,
+  SET_ACTIVE_DRAFT_SLIDE,
   SET_PAGE_PROJECTS,
   UPDATE_HAS_MORE_PROJECTS,
   UPDATE_PROJECT_LOADING,
-  UPDATE_VIDEO_PROJECT_SERVER,
-  GET_PROJECT_SLIDE_SERVER,
-  GET_PREVIEW_PROJECT_SERVER,
-  LOCK_VIDEO_PROJECT_SERVER,
-  MERGE_VIDEOS_PROJECT_SERVER,
-  SET_ACTIVE_DRAFT_SLIDE,
-  CLEAR_ACTIVE_DRAFT_SLIDE,
   UPDATE_SLIDE_STATUS_SERVER,
+  UPDATE_VIDEO_PROJECT_SERVER,
 } from "../actions/projectAction";
-import { GENERATE_VOICE_SERVER } from "../actions/actorActions";
-import { checkIfZoneCached } from "../../lib/editorUtils";
-import { toast } from "react-toastify";
-import * as Sentry from "@sentry/react";
-import { SentryErrors } from "../../lib/sentry";
 
 export interface projectStateType {
   [ProjectModules.projectList]: {
@@ -298,7 +299,8 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
-    case CREATE_VIDEO_PROJECT_SERVER: {
+    case CREATE_VIDEO_PROJECT_SERVER:
+    case CREATE_AVATAR_PROJECT_SERVER: {
       return {
         ...state,
         [ProjectModules.project]: {
@@ -307,12 +309,24 @@ const profileReducer = (state = projectInitialState, action: any) => {
         },
       };
     }
-    case `${CREATE_VIDEO_PROJECT_SERVER}_SUCCESS`: {
+    case `${CREATE_VIDEO_PROJECT_SERVER}_SUCCESS`:
+    case `${CREATE_AVATAR_PROJECT_SERVER}_SUCCESS`: {
       return {
         ...state,
         [ProjectModules.project]: {
           ...state[ProjectModules.project],
           createdProject: action.payload.data.data,
+          isLoading: false,
+        },
+      };
+    }
+    case `${CREATE_VIDEO_PROJECT_SERVER}_FAIL`:
+    case `${CREATE_AVATAR_PROJECT_SERVER}_FAIL`: {
+      toast.error("Failed to create avatar project. Please try again.");
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
           isLoading: false,
         },
       };
@@ -340,11 +354,28 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case `${GET_PROJECT_SLIDE_SERVER}_SUCCESS`: {
+      const fetchedProject = action.payload.data.data;
+      const currentProject = state[ProjectModules.project].project;
+      let newSlides = currentProject?.slides ? [...currentProject.slides] : [];
+      if (fetchedProject?.slides?.length > 0) {
+        const fetchedSlide = fetchedProject.slides[0];
+        const slideIndex = newSlides.findIndex((s: any) => s.slideId === fetchedSlide.slideId);
+        if (slideIndex !== -1) {
+          newSlides[slideIndex] = fetchedSlide;
+        } else {
+          newSlides.push(fetchedSlide);
+        }
+      }
+
       return {
         ...state,
         [ProjectModules.project]: {
           ...state[ProjectModules.project],
-          project: action.payload.data.data,
+          project: {
+            ...(currentProject || {}),
+            ...fetchedProject,
+            slides: newSlides,
+          },
           isLoading: false,
         },
       };
@@ -355,6 +386,51 @@ const profileReducer = (state = projectInitialState, action: any) => {
         [ProjectModules.project]: {
           ...state[ProjectModules.project],
           createdProject: null,
+        },
+      };
+    }
+    case UPDATE_VIDEO_PROJECT_SERVER: {
+      const newSlide = action.payload.request.data.slides[0];
+      const newParagraph = newSlide?.projectParagraphs?.[0];
+
+      if (!newParagraph) return state;
+
+      const currentProject = state[ProjectModules.project].project;
+      const currentSlidesData = state[ProjectModules.project].slidesData || [];
+
+      // Optimistically append the new paragraph to the relevant slide
+      const updatedSlidesData = currentSlidesData.map((slide) => {
+        if (slide.slideId === newSlide.slideId) {
+          return {
+            ...slide,
+            projectParagraphs: [...(slide.projectParagraphs || []), newParagraph],
+          };
+        }
+        return slide;
+      });
+
+      const updatedProjectSlides = currentProject?.slides?.map((slide: any) => {
+        if (slide.slideId === newSlide.slideId) {
+          return {
+            ...slide,
+            projectParagraphs: [...(slide.projectParagraphs || []), newParagraph],
+          };
+        }
+        return slide;
+      });
+
+      return {
+        ...state,
+        [ProjectModules.project]: {
+          ...state[ProjectModules.project],
+          slidesData: updatedSlidesData,
+          project: currentProject
+            ? {
+                ...currentProject,
+                slides: updatedProjectSlides,
+              }
+            : currentProject,
+          // We do not set isLoading: true to prevent unmounting the UI
         },
       };
     }
@@ -433,6 +509,7 @@ const profileReducer = (state = projectInitialState, action: any) => {
           project: {
             ...state[ProjectModules.project].project,
             output: action.payload.data.data,
+            status: 3,
           },
           isLoading: false,
         },

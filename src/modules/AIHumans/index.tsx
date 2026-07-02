@@ -1,24 +1,32 @@
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Button, { ButtonThemes } from "../../components/Button/Button";
 import IconButton, { IconButtonThemes } from "../../components/Button/IconButton";
-import { ArrowRight, DesktopIcon, SquareIcon, ThreeSectionLayout } from "../../components/Icons/Icons";
+import { ArrowRight, DesktopIcon } from "../../components/Icons/Icons";
 import { MobileIcon } from "../../components/Icons/MobileIcon";
-import ProfileHumanSidebar from "./components/ProfileHumanSidebar";
+import { useVideoEditor } from "../../hooks/useVideoEditor";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { featuresSettings, sidebar } from "../../mocks/humans";
 import { getActorsServer } from "../../redux/actions/actorActions";
 import { getActorsList } from "../../redux/reducers/actorReducer";
+import { getAllUserAssetsServer } from "../../redux/actions/profileActions";
+import {
+  getVideoByProjectIdServer,
+  getProjectSlideServer,
+  clearCurrentProject,
+} from "../../redux/actions/projectAction";
+import { getProject } from "../../redux/reducers/projectReducer";
+import { IActor } from "../../types/actor";
 import { ProfileHumanSidebarType } from "../../types/human";
 import { Paragraphs } from "../../types/project";
+import Scene from "../ScenesPoc/components/Scene";
+import Modal from "../../components/Modal/Modal";
+import ProfileHumanSidebar from "./components/ProfileHumanSidebar";
+import Sidebar from "./components/Sidebar";
 import SoundFeaturesSettingsCard from "./components/SoundFeaturesSettingsCard";
 import Timeline from "./components/Timeline";
-import { useVideoEditor } from "../../hooks/useVideoEditor";
-import Scene from "../ScenesPoc/components/Scene";
-import Sidebar from "./components/Sidebar";
-import { IActor } from "../../types/actor";
 
 const screens = [
   { id: 1, icon: <DesktopIcon /> },
@@ -44,10 +52,14 @@ const initialParagraphsData = [
 ];
 
 const AIHumansPage = () => {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const actorsList = useSelector(getActorsList);
+  const projectData = useSelector(getProject);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [activeSidebarItem, setActiveSidebarItem] = useState(ProfileHumanSidebarType.Background);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [paragraphs, setParagraphs] = useState<Paragraphs[]>(initialParagraphsData);
   const [paragraphActive, setParagraphActive] = useState<number>();
@@ -96,7 +108,25 @@ const AIHumansPage = () => {
         language: [],
       }),
     );
-  }, []);
+    dispatch(
+      getAllUserAssetsServer({
+        pageNumber: 1,
+        pageSize: 60,
+        assetTypeId: 11,
+        sortWith: "insertDateTime",
+        sortByDesc: true,
+      }),
+    );
+    if (projectId) {
+      dispatch(getVideoByProjectIdServer(Number(projectId)));
+    }
+  }, [dispatch, projectId]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearCurrentProject());
+    };
+  }, [dispatch]);
 
   const element = sidebar.find(({ type }: any) => type === activeSidebarItem);
 
@@ -117,10 +147,93 @@ const AIHumansPage = () => {
     handleBackgroundChange,
     deleteAllText,
     setEditableTextId,
+    handleScriptChange,
     scenes,
     currentScene,
     activeSceneId,
+    setScenesExternal,
   } = useVideoEditor();
+
+  useEffect(() => {
+    if (projectData && projectData.projectId === Number(projectId)) {
+      const projectSlides: any[] = projectData.slides || [];
+
+      if (projectSlides.length > 0) {
+        const mappedScenes = projectSlides.map((slide: any) => {
+          let text = "";
+          if (slide.projectParagraphs) {
+            text = slide.projectParagraphs
+              .map((p: any) => p.data?.map((z: any) => z.text).join(" ") || p.text || "")
+              .join(" ");
+          }
+
+          const objects: any[] = [];
+          if (slide.aiHumanActor) {
+            objects.push({
+              type: "avatars",
+              object: {
+                id: slide.aiHumanActorId || Math.random(),
+                position: {
+                  x: slide.actorPositionX != null ? slide.actorPositionX : 0,
+                  y: slide.actorPositionY != null ? slide.actorPositionY : 0,
+                },
+                size: {
+                  width: slide.actorSizeWidth != null ? slide.actorSizeWidth : "100%",
+                  height: slide.actorSizeHeight != null ? slide.actorSizeHeight : "100%",
+                },
+                src: slide.aiHumanActor.photo?.startsWith("http")
+                  ? slide.aiHumanActor.photo
+                  : `https://dev.synthesys.live${slide.aiHumanActor.photo}`,
+              },
+            });
+          }
+
+          if (slide.customTexts && slide.customTexts.length > 0) {
+            slide.customTexts.forEach((ct: any) => {
+              objects.push({
+                type: "texts",
+                object: {
+                  id: ct.customTextId || Math.random(),
+                  position: { x: ct.positionX || 50, y: ct.positionY || 50 },
+                  size: { width: ct.width || 160, height: ct.height || 40 },
+                  text: ct.text || "",
+                  style: {
+                    color: ct.textColor || "#000",
+                    fontSize: ct.fontSize ? `${ct.fontSize}px` : "24px",
+                    fontWeight: ct.isBold ? "bold" : "normal",
+                    fontStyle: ct.isItalic ? "italic" : "normal",
+                    fontFamily: ct.fontFamily || "Arial",
+                  },
+                },
+              });
+            });
+          }
+
+          return {
+            id: slide.slideId || Math.random(),
+            background:
+              slide.backgroundAsset?.path || slide.slideBackgroundColor || slide.backGroundColor || "/images/mock1.png",
+            activeObjectId: 0,
+            editableTextId: 0,
+            objects: objects,
+            script: text,
+          };
+        });
+        setScenesExternal(mappedScenes);
+      }
+    }
+  }, [projectData, projectId]);
+
+  useEffect(() => {
+    if (activeSceneId && projectData && projectData.projectId === Number(projectId)) {
+      const activeSlide = projectData.slides?.find((s: any) => s.slideId === activeSceneId);
+      if (activeSlide && !activeSlide.projectParagraphs) {
+        dispatch(getProjectSlideServer(Number(projectId), activeSceneId));
+      }
+    }
+  }, [activeSceneId, projectData, projectId, dispatch]);
+
+  if (!scenes.length && !projectId) addScene();
 
   return (
     <Wrapper>
@@ -134,22 +247,29 @@ const AIHumansPage = () => {
                 buttonTheme={ButtonThemes.Secondary}
                 icon={<img src="/images/arrow-left.svg" />}
                 text="Back"
+                onClick={() => navigate("/ai-avatar")}
               />
-              <ScreenButton>
+              {/* <ScreenButton>
                 {screens.map(({ id, icon }) => (
                   <IconButton
                     key={id}
                     iconButtonTheme={IconButtonThemes.Rounded}
                     icon={icon}
-                    className={active === id ? "active" : "not-active"}
+                    className={active === id ? "not-active" : "active"}
                     onClick={() => handleActive(id)}
                   />
                 ))}
-              </ScreenButton>
+              </ScreenButton> */}
             </Heading>
           }
           navActions={
             <ButtonWrapper>
+              <Button
+                buttonTheme={ButtonThemes.Secondary}
+                text="Preview"
+                onClick={() => setIsPreviewOpen(true)}
+                disabled={!projectData?.output || projectData?.projectId !== Number(projectId)}
+              />
               <Button buttonTheme={ButtonThemes.Transparent} text="Save as draft" />
               <Button text="Create Video" />
             </ButtonWrapper>
@@ -170,6 +290,7 @@ const AIHumansPage = () => {
                   deleteAllText={deleteAllText}
                   handleAddAvatar={handleAddAvatar}
                   handleAddShape={handleAddShape}
+                  handleScriptChange={handleScriptChange}
                 />
               </Left>
             )}
@@ -183,29 +304,31 @@ const AIHumansPage = () => {
                       updateSize={updateSize}
                       handleChangeActiveObject={handleChangeActiveObject}
                       setEditableTextId={setEditableTextId}
+                      canvasWidth={projectData?.canvasWidth}
                       {...currentScene}
                     />
                   )}
                 </ImageWrapper>
-                <SoundFeaturesSettingsCard
-                  actors={actorsList}
-                  active={actorId}
-                  paragraphs={paragraphs}
-                  setActorActive={handleActorPopupClick}
-                  featuresSettings={featuresSettings}
-                  currentParagraphActor={actor || paragraphActor}
-                  currentParagraphActorsList={paragraphActorsList || []}
+                <Timeline
+                  scenes={scenes}
+                  activeSceneId={activeSceneId}
+                  addScene={addScene}
+                  dublicateScene={dublicateScene}
+                  handleDeleteScene={handleDeleteScene}
+                  handleChangeActiveScene={handleChangeActiveScene}
+                  setActiveSidebarItem={setActiveSidebarItem}
+                  orientation="horizontal"
                 />
               </div>
-              <Timeline
-                scenes={scenes}
-                activeSceneId={activeSceneId}
-                addScene={addScene}
-                dublicateScene={dublicateScene}
-                handleDeleteScene={handleDeleteScene}
-                handleChangeActiveScene={handleChangeActiveScene}
-                setActiveSidebarItem={setActiveSidebarItem}
-              />
+              {/* <SoundFeaturesSettingsCard
+                actors={actorsList}
+                active={actorId}
+                paragraphs={paragraphs}
+                setActorActive={handleActorPopupClick}
+                featuresSettings={featuresSettings}
+                currentParagraphActor={actor || paragraphActor}
+                currentParagraphActorsList={paragraphActorsList || []}
+              /> */}
             </Right>
           </Content>
         </DashboardLayout>
@@ -213,6 +336,20 @@ const AIHumansPage = () => {
           <IconButton icon={<ArrowRight />} onClick={handleLeftSidebarOpen} />
         </IconButtonWrapper>
       </PageWrapper>
+      <Modal open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} maxWidth={800}>
+        {isPreviewOpen && (
+          <VideoPreviewWrapper>
+            {projectData?.output && projectData?.projectId === Number(projectId) ? (
+              <video width="100%" controls autoPlay key={projectData.output}>
+                <source src={`http://192.168.1.80:7132${projectData.output}`} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <p style={{ color: "#fff", padding: 20 }}>No video available</p>
+            )}
+          </VideoPreviewWrapper>
+        )}
+      </Modal>
     </Wrapper>
   );
 };
@@ -292,7 +429,7 @@ const Right = styled.div`
 const ImageWrapper = styled.div`
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 80%;
 `;
 
 const IconButtonWrapper = styled.div<{ active?: boolean }>`
@@ -349,6 +486,17 @@ const ScreenButton = styled.div`
       opacity: 0.4;
     }
   }
+`;
+
+const VideoPreviewWrapper = styled.div`
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-height: 80vh;
 `;
 
 const ButtonWrapper = styled.div`

@@ -111,7 +111,15 @@ const AIHumansPopup = ({ open, onClose }: Props) => {
           </HumansCardsWrapper>
           <ActionsWrapper>
             <Button text="Cancel" buttonTheme={ButtonThemes.Outline} onClick={onClose} />
-            <Button text="Add" />
+            <Button
+              text="Add"
+              onClick={() => {
+                if (prefilled?.onAdd) {
+                  prefilled.onAdd(humans.find((h) => h.id === active));
+                }
+                onClose();
+              }}
+            />
           </ActionsWrapper>
         </Right>
       </Content>

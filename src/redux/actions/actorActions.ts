@@ -148,6 +148,7 @@ export const getActorsServer = ({
         history,
         popular,
         pageSize: 16,
+        actorTypeId: 14,
       },
     },
   },

@@ -4,7 +4,7 @@ import { Position, ResizableDelta } from "react-rnd";
 export interface ResizeDragObj {
   id: number;
   position: Position;
-  size: ResizableDelta;
+  size: { width: string | number; height: string | number };
 }
 
 export enum ShapeTypes {
@@ -66,6 +66,7 @@ export interface Scene {
   editableTextId: number;
   background: string | BackgroundColor;
   objects: SceneObject[];
+  script: string;
 }
 
 export enum ObjectTypes {

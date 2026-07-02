@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import styled from "styled-components";
 
 interface MenuPosition {
@@ -36,12 +36,12 @@ const MenuWrapper = styled.div`
   border-radius: 12px;
   border: 1px solid #0063b4;
   position: absolute;
-  ${(props: WrapperProps) => (props.position.y === "top" ? "bottom: 50px" : "top: 50px")};
+  ${(props: WrapperProps) => (props.position.y === "top" ? "bottom: 50px" : "top: 30px")};
   ${(props: WrapperProps) => (props.position.x === "left" ? "right: 25px" : "left: 140px")};
   z-index: 25;
 
   @media (max-width: 516px) {
-    ${(props: WrapperProps) => (props.position.y === "top" ? "bottom: 50px" : "top: 50px")};
+    ${(props: WrapperProps) => (props.position.y === "top" ? "bottom: 50px" : "top: 30px")};
     ${(props: WrapperProps) => (props.position.x === "left" ? "right: 25px" : "left: 100px")};
   }
 `;

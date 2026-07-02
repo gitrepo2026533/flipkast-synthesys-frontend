@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
-import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getProject } from "../../../redux/reducers/projectReducer";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import Button, { ButtonThemes } from "../../../components/Button/Button";
+import { CheckIcon } from "../../../components/Icons/CheckIcon";
+import { EditIcon } from "../../../components/Icons/EditIcon";
+import { PlayIcon } from "../../../components/Icons/PlayIcon";
+import { SaveIcon } from "../../../components/Icons/SaveIcon";
+import PopupModel from "../../../components/PopupModel/PopupModel";
+import Textfield, { TextfieldVariant } from "../../../components/Textfield/Textfield";
+import ThemeSwitcher from "../../../components/ThemeSwitcher/ThemeSwitcher";
 import {
   getPreviewProjectServer,
   getProjectSlideServer,
   mergeVideosProjectServer,
+  ProjectType,
   updateVideoProjectServer,
 } from "../../../redux/actions/projectAction";
+import { getProject } from "../../../redux/reducers/projectReducer";
 import VideoModal from "./VideoModal";
-import Button, { ButtonThemes } from "../../../components/Button/Button";
-import Textfield, { TextfieldVariant } from "../../../components/Textfield/Textfield";
-import ThemeSwitcher from "../../../components/ThemeSwitcher/ThemeSwitcher";
-import { PlayIcon } from "../../../components/Icons/PlayIcon";
-import { EditIcon } from "../../../components/Icons/EditIcon";
-import { SaveIcon } from "../../../components/Icons/SaveIcon";
-import { CheckIcon } from "../../../components/Icons/CheckIcon";
-import PopupModel from "../../../components/PopupModel/PopupModel";
 
 const processStatus: Record<number, string> = {
   1: "pending",
@@ -33,6 +34,7 @@ const HeaderActions = () => {
   const dispatch = useDispatch();
   const [currentStatus, setCurrentStatus] = useState("pending");
   const [showPreviewPopup, setShowPreviewPopup] = useState(false);
+  const isAvatarProject = projectData?.projectTypeId === ProjectType.AVT;
   const navigate = useNavigate();
 
   const handleTitleDoubleClick = () => {
@@ -147,7 +149,7 @@ const HeaderActions = () => {
             icon={<img src="/images/arrow-left.svg" />}
             style={{ position: "relative", zIndex: "100" }}
             text="Back"
-            onClick={() => navigate("/ai-video")}
+            onClick={() => (isAvatarProject ? navigate("/ai-avatar") : navigate("/ai-video"))}
           />
         </CenterSection>
 

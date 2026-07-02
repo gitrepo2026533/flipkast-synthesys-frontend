@@ -13,17 +13,27 @@ interface Props {
     image: string;
   }[];
   handleAddAvatar: (src: string) => void;
-  updateSize: (size: ResizableDelta, id: number, objType: ObjectTypes) => void;
+  updateSize: (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => void;
+  onLoadMore?: () => void;
 }
 
-const HumatarSidebar = ({ data, handleAddAvatar, updateSize }: Props) => {
+const HumatarSidebar = ({ data, handleAddAvatar, updateSize, onLoadMore }: Props) => {
   const [modeSelection, setModeSelection] = useState(false);
 
   const handleEditMode = () => setModeSelection(true);
   const handleViewMode = () => setModeSelection(false);
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 20) {
+      if (onLoadMore) {
+        onLoadMore();
+      }
+    }
+  };
+
   return (
-    <Wrapper>
+    <Wrapper onScroll={handleScroll}>
       {!modeSelection ? (
         <ViewContent>
           {data.map(({ id, image }) => (
@@ -50,13 +60,13 @@ const HumatarSidebar = ({ data, handleAddAvatar, updateSize }: Props) => {
           </EditActionWrapper>
         </EditContent>
       )}
-      <ActionWrapper modeSelection={modeSelection}>
+      {/* <ActionWrapper modeSelection={modeSelection}>
         {!modeSelection ? (
           <Button icon={<EditIcon />} text="Edit" onClick={handleEditMode} />
         ) : (
           <Button buttonTheme={ButtonThemes.Secondary} text="Back" onClick={handleViewMode} />
         )}
-      </ActionWrapper>
+      </ActionWrapper> */}
     </Wrapper>
   );
 };
@@ -101,6 +111,8 @@ const ViewContent = styled.div`
     width: 80px;
     height: 80px;
     border-radius: 16px;
+    object-fit: cover;
+    object-position: top;
   }
 `;
 
