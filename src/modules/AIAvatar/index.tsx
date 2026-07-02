@@ -62,11 +62,24 @@ const AiAvatar = () => {
 
   useEffect(() => {
     if (pageNumber === 1) {
-      setProjectsData(videoProjects);
+      // fresh load or search
+      if (projectListLoading) {
+        setProjectsData([]);
+      } else {
+        setProjectsData(videoProjects);
+      }
     } else {
-      setProjectsData((prev: any) => [...prev, ...videoProjects]);
+      // pagination
+      // Only append if not loading, to avoid appending same items twice
+      if (!projectListLoading) {
+         setProjectsData((prev: any) => {
+            // Prevent duplicate appending by checking if we already have these items
+            const newItems = videoProjects.filter((vp: any) => !prev.find((p: any) => p.projectId === vp.projectId));
+            return [...prev, ...newItems];
+         });
+      }
     }
-  }, [videoProjects]);
+  }, [videoProjects, projectListLoading, pageNumber]);
 
   return (
     <Wrapper>

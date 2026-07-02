@@ -278,10 +278,12 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case `GET_VIDEO_PROJECT_SERVER`: {
+      const isFirstPage = action.payload?.request?.data?.pageNumber === 1;
       return {
         ...state,
         [ProjectModules.projectList]: {
           ...state[ProjectModules.projectList],
+          data: isFirstPage ? [] : state[ProjectModules.projectList].data,
           isLoading: true,
         },
       };
