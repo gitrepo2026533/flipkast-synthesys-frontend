@@ -244,7 +244,7 @@ export const createVideoProjectServer = ({ prompt }: createVideoProjectServerPro
       method: "POST",
       url: "/project/create",
       data: {
-        projectTypeId: ProjectType.AVT,
+        projectTypeId: ProjectType.VIDEO,
         slides: [
           {
             slideId: 0,
