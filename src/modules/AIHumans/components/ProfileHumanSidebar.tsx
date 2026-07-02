@@ -4,7 +4,7 @@ import {
   CircleIcon,
   ImageIcon,
   LinkIcon,
-  Logo,
+  LogoIcon,
   MusicIcon,
   ProfileIcon,
   TextIcon,
@@ -21,10 +21,10 @@ const humansSidebar = [
   { id: 1, icon: <ProfileIcon />, type: ProfileHumanSidebarType.Humatar },
   { id: 2, icon: <ImageIcon />, type: ProfileHumanSidebarType.Background },
   { id: 3, icon: <ScriptsIcon />, type: ProfileHumanSidebarType.Script },
-  { id: 4, icon: <TextIcon />, type: ProfileHumanSidebarType.Text },
-  { id: 5, icon: <CircleIcon />, type: ProfileHumanSidebarType.Shapes },
-  { id: 6, icon: <MusicIcon />, type: ProfileHumanSidebarType.Soundtrack },
-  { id: 7, icon: <LinkIcon />, type: ProfileHumanSidebarType.Transitions },
+  // { id: 4, icon: <TextIcon />, type: ProfileHumanSidebarType.Text },
+  // { id: 5, icon: <CircleIcon />, type: ProfileHumanSidebarType.Shapes },
+  // { id: 6, icon: <MusicIcon />, type: ProfileHumanSidebarType.Soundtrack },
+  // { id: 7, icon: <LinkIcon />, type: ProfileHumanSidebarType.Transitions },
 ];
 
 const ProfileHumanSidebar = ({ activeSidebarItem, setActiveSidebarItem }: Props) => {
@@ -41,7 +41,7 @@ const ProfileHumanSidebar = ({ activeSidebarItem, setActiveSidebarItem }: Props)
     <Wrapper>
       <Content>
         <ImageWrapper>
-          <Logo />
+          <LogoIcon />
         </ImageWrapper>
         <ButtonsWrapper>
           {humansSidebar.map(({ id, icon, type }) => (

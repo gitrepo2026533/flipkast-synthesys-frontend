@@ -13,9 +13,10 @@ interface Props {
   dragHandleClassName?: string;
   editableTextId: number;
   updatePosition: (position: Position, id: number, objType: ObjectTypes) => void;
-  updateSize: (size: ResizableDelta, id: number, objType: ObjectTypes) => void;
+  updateSize: (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => void;
   handleChangeActiveObject: (id: number) => void;
   children: React.ReactNode;
+  scale?: number;
 }
 
 const SceneObjectWrapper = ({
@@ -29,6 +30,7 @@ const SceneObjectWrapper = ({
   updatePosition,
   handleChangeActiveObject,
   children,
+  scale,
 }: Props) => {
   const handlChangeActive = (event: React.MouseEvent<HTMLElement>, id: number) => {
     event.stopPropagation();
@@ -49,6 +51,7 @@ const SceneObjectWrapper = ({
       handleChangeActiveObject={handleChangeActiveObject}
       dragHandleClassName={dragHandleClassName}
       editableTextId={editableTextId}
+      scale={scale}
     >
       <ObjectWrapper onClick={(event) => handlChangeActive(event, obj.id)} active={activeObjectId === obj.id}>
         <DragResizeFrameWrapper active={activeObjectId === obj.id && editableTextId !== obj.id}>

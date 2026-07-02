@@ -21,7 +21,12 @@ interface ActiveSlideInfo {
   isActive: boolean;
 }
 
-const RightPanelSide = () => {
+interface RightPanelProps {
+  currentSlideId: number | null;
+  setCurrentSlideId: (id: number | null) => void;
+}
+
+const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) => {
   const dispatch = useDispatch();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,7 +35,6 @@ const RightPanelSide = () => {
   const projectSlides = useSelector(getSlidesData);
   const [slides, setSlides] = useState<any>([]);
   const [slideData, setSlideData] = useState<any>({});
-  const [currentSlideId, setCurrentSlideId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | number | null>(null);
   const [activeSlideInfo, setActiveSlideInfo] = useState<ActiveSlideInfo | null>(null);
@@ -153,9 +157,18 @@ const RightPanelSide = () => {
 
   useEffect(() => {
     if (!projectData) return;
-    setSlideData(projectData?.slides?.[0] || {});
-    setCurrentSlideId(projectData?.slides?.[0]?.slideId || null);
-  }, [projectData]);
+
+    const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+    const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
+
+    if (activeSlide) {
+      setSlideData(activeSlide);
+      if (!currentSlideId) setCurrentSlideId(activeSlide.slideId);
+    } else {
+      setSlideData(projectData.slides?.[0] || {});
+      setCurrentSlideId(projectData.slides?.[0]?.slideId || null);
+    }
+  }, [projectData, currentSlideId]);
 
   useEffect(() => {
     if (projectSlides) setSlides(projectSlides);

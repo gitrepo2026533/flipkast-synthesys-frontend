@@ -4,7 +4,7 @@ import { Position, ResizableDelta } from "react-rnd";
 export interface ResizeDragObj {
   id: number;
   position: Position;
-  size: ResizableDelta;
+  size: { width: string | number; height: string | number };
 }
 
 export enum ShapeTypes {

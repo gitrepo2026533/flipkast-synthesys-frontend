@@ -6,7 +6,8 @@ import { useVideoSceneHistory } from "./useVideoSceneHistory";
 const DEFAULT_OBJECT_POSITION = { x: 10, y: 10 };
 
 const DEFAULT_TEXT_SIZE = { width: 160, height: 40 };
-const DEFAULT_AVATAR_SIZE = { width: 100, height: 100 };
+const DEFAULT_AVATAR_POSITION = { x: 0, y: 0 };
+const DEFAULT_AVATAR_SIZE = { width: "100%", height: "100%" };
 const DEFAULT_SHAPE_SIZE = { width: 100, height: 100 };
 
 enum ChangeLayer {
@@ -78,6 +79,16 @@ export const useVideoEditor = () => {
     setActiveSceneId(rand);
   };
 
+  const setScenesExternal = (newScenes: SceneType[]) => {
+    setScenes(newScenes);
+    setActiveSceneId((prevId) => {
+      if (newScenes.some((scene) => scene.id === prevId)) {
+        return prevId;
+      }
+      return newScenes.length > 0 ? newScenes[0].id : NaN;
+    });
+  };
+
   const handleDeleteScene = (id: number) => {
     setScenes((scenes) => scenes.filter(({ id: sceneId }) => sceneId !== id));
   };
@@ -134,7 +145,7 @@ export const useVideoEditor = () => {
       type: ObjectTypes.avatars,
       object: {
         id: rand,
-        position: DEFAULT_OBJECT_POSITION,
+        position: DEFAULT_AVATAR_POSITION,
         size: DEFAULT_AVATAR_SIZE,
         src,
       },
@@ -180,7 +191,7 @@ export const useVideoEditor = () => {
     });
   };
 
-  const updateSize = (size: ResizableDelta, id: number, objType: ObjectTypes) => {
+  const updateSize = (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => {
     if (!currentScene) return;
     updateScene({
       ...currentScene,
@@ -293,5 +304,6 @@ export const useVideoEditor = () => {
     scenes: currentScenes || scenes,
     currentScene,
     activeSceneId,
+    setScenesExternal,
   };
 };

@@ -122,11 +122,11 @@ const getTextAlign = {
 
 const Avatar = styled.div<{ src: string }>`
   background-image: url(${({ src }) => src});
-  background-size: cover;
-  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
 `;
 
 export default SceneObject;

@@ -44,6 +44,7 @@ export interface Project {
   title: string;
   output?: string;
   coverImage?: string;
+  canvasWidth?: number;
   insertDateTime?: string;
   updateDateTime?: string;
   subTitle?: string;

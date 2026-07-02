@@ -1,36 +1,20 @@
 /* eslint-disable prettier/prettier */
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import styled from "styled-components";
-import AvatarSelectorModal from "../../components/AvatarSelectorModal/AvatarSelectorModal";
-import BackgroundSelectorModal from "../../components/BackgroundSelectorModal/BackgroundSelectorModal";
-import ChatInput from "../../components/ChatInput/ChatInput";
 import CircularProgress from "../../components/Icons/CircularProgress";
-import { ImageIcon, ProfileIcon } from "../../components/Icons/Icons";
 import { SearchIcon } from "../../components/Icons/SearchIcon";
 import Textfield from "../../components/Textfield/Textfield";
+import Button from "../../components/Button/Button";
 import withPrivateRoute from "../../hocs/withPrivateRoute";
 import SidebarLayout from "../../layouts/SidebarLayout";
-import { BackgroundProps, sidebar } from "../../mocks/humans";
-import { StoreType } from "../../types/store";
-import { createAvatarProjectServer, getVideoProjectServer, ProjectType, resetCreatedProject } from "../../redux/actions/projectAction";
-import { getActorsServer } from "../../redux/actions/actorActions";
-import { createProjectLoading, getCreatedProject, getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
-import { getActorsList } from "../../redux/reducers/actorReducer";
-import { getAllUserAssetsServer } from "../../redux/actions/profileActions";
-import { getUserAssets } from "../../redux/reducers/profileReducer";
-import { getFullImageUrl } from "../../lib/getFullImageUrl";
-import { IHuman, ProfileHumanSidebarType } from "../../types/human";
+import { getVideoProjectServer, ProjectType } from "../../redux/actions/projectAction";
+import { getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
 import VideoProjectCard from "../AIVideo/components/VideoProjectCard";
-import { chips, models } from "../AIVideo/data";
 
 const AiAvatar = () => {
   const navigate = useNavigate();
-  const [prompt, setPrompt] = useState("");
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [selectedModel, setSelectedModel] = useState(models[0]);
   const dispatch = useDispatch();
   const [pageSize, setPageSize] = useState(10);
   const [pageNumber, setPageNumber] = useState(1);
@@ -41,77 +25,11 @@ const AiAvatar = () => {
   const [sortByDesc, setSortByDesc] = useState(true);
 
   const videoProjects = useSelector(getProjectList);
-  const isCreatingProject = useSelector(createProjectLoading);
-  const createdProject = useSelector(getCreatedProject);
   const projectListLoading = useSelector(getProjectListLoading);
   const totalPages = useSelector(getTotalPages);
 
   const [projectsData, setProjectsData] = useState<any[]>([]);
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
-
-  const actorsList = useSelector(getActorsList);
-
-  useEffect(() => {
-    dispatch(getActorsServer({ pageNumber: 1 }));
-    dispatch(getAllUserAssetsServer({
-      pageNumber: 1, pageSize: 60, assetTypeId: 11,
-      sortWith: "insertDateTime",
-      sortByDesc: true,
-    }));
-  }, [dispatch]);
-
-  // Avatar Selection State
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState<IHuman | null>(null);
-  
-  const avatarData = actorsList?.map((actor) => ({
-    id: actor.actorId,
-    image: getFullImageUrl(actor.photo),
-  }));
-
-  // Background Selection State
-  const [showBgModal, setShowBgModal] = useState(false);
-  const [selectedBackground, setSelectedBackground] = useState<string | null>(null);
-  const userAssets = useSelector(getUserAssets);
-  const backgroundData = useMemo(() => {
-    const assets = userAssets?.map((asset: any) => ({
-      id: asset.userAssetID,
-      image: asset.path,
-    })) || [];
-
-    const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
-    return mockBgData.map((category: any) => {
-        return {
-          ...category,
-          data: assets,
-        };
-    });
-  }, [userAssets]);
-
-  const handleSend = () => {
-    if (prompt.trim() === "") return;
-    if (!selectedAvatar || !selectedBackground) {
-      toast.error("Please select both an Avatar and a Background before generating.");
-      return;
-    }
-
-    let bgId: string | number = selectedBackground;
-    backgroundData.forEach((category: any) => {
-      if (category.data) {
-        const match = category.data.find((b: any) => b.image === selectedBackground || b.video === selectedBackground);
-        if (match) bgId = match.id;
-      }
-    });
-
-    // Include selected avatar and background images in the payload
-    dispatch(createAvatarProjectServer({
-      script: prompt.trim(),
-      avatarImage: selectedAvatar.imageSrc,
-      avatarId: selectedAvatar.id,
-      backgroundId: bgId,
-      backgroundImage: selectedBackground,
-    }));
-  };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
@@ -127,13 +45,6 @@ const AiAvatar = () => {
     setPageNumber(1);
     setProjectsData([]);
   };
-
-  useEffect(() => {
-    if (createdProject?.projectId) {
-      navigate(`/ai-video/projects/${createdProject?.projectId}`);
-      dispatch(resetCreatedProject());
-    }
-  }, [createdProject]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -157,74 +68,18 @@ const AiAvatar = () => {
     }
   }, [videoProjects]);
 
-  const openAvatarSelector = () => {
-    setShowAvatarModal(true);
-  };
-
-  const openBgSelector = () => {
-    setShowBgModal(true);
-  };
-
-  const extraLeftActions = (
-    <ToolbarActions>
-      <ToolbarButton onClick={openAvatarSelector} title="Select Avatar">
-        <ProfileIcon />
-      </ToolbarButton>
-      <ToolbarButton onClick={openBgSelector} title="Select Background">
-        <ImageIcon />
-      </ToolbarButton>
-    </ToolbarActions>
-  );
-
-  const previewChips = [];
-  if (selectedAvatar) {
-    previewChips.push({
-      label: "Avatar",
-      title: selectedAvatar.name || "Selected Avatar",
-      image: selectedAvatar.imageSrc || "https://picsum.photos/100",
-      onRemove: () => setSelectedAvatar(null)
-    });
-  }
-  if (selectedBackground) {
-    previewChips.push({
-      label: "Background",
-      title: "Selected BG",
-      image: selectedBackground,
-      onRemove: () => setSelectedBackground(null)
-    });
-  }
-
   return (
     <Wrapper>
       <SidebarLayout>
         <Content>
           <Container>
-            <HeroSection>
-              <HeroText>
-                <PageTitle>Generate AI Avatar Videos</PageTitle>
-                <PageSubtitle>from Script</PageSubtitle>
-              </HeroText>
-
-              <ChatInput
-                value={prompt}
-                width="100%"
-                minHeight="50px"
-                maxHeight="140px"
-                chips={chips}
-                attachedFiles={attachedFiles}
-                setAttachedFiles={setAttachedFiles}
-                onChange={setPrompt}
-                onSend={handleSend}
-                onSelectModel={setSelectedModel}
-                selectedModel={selectedModel}
-                models={models}
-                showLoading={isCreatingProject}
-                extraLeftActions={extraLeftActions}
-                previewChips={previewChips}
-                placeholder="Enter your script here..."
+            <PageHeader>
+              <Button
+                text="Create AI Avatar Video"
+                onClick={() => navigate("/ai-humans")}
+                style={{ width: "fit-content", padding: "0 20px" }}
               />
-            </HeroSection>
-
+            </PageHeader>
             <ProjectsSection>
               <ProjectsHeader>
                 <ProjectsLabel>My Projects</ProjectsLabel>
@@ -243,7 +98,7 @@ const AiAvatar = () => {
                       title={project.title}
                       image={project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354"}
                       preViewVideo={project?.output}
-                      onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
+                      onClick={() => navigate(`/ai-humans/projects/${project.projectId}`)}
                     />
                   ))
                 ) : (
@@ -263,29 +118,6 @@ const AiAvatar = () => {
           </Container>
         </Content>
       </SidebarLayout>
-
-      {/* Avatar Selector Modal */}
-      <AvatarSelectorModal
-        open={showAvatarModal}
-        onClose={() => setShowAvatarModal(false)}
-        avatarData={avatarData}
-        selectedAvatarId={selectedAvatar?.id}
-        onSelect={(avatar) => {
-          setSelectedAvatar(avatar);
-          setShowAvatarModal(false);
-        }}
-      />
-
-      {/* Background Selector Modal */}
-      <BackgroundSelectorModal
-        open={showBgModal}
-        onClose={() => setShowBgModal(false)}
-        backgroundData={backgroundData}
-        onSelect={(src) => {
-          setSelectedBackground(src);
-          setShowBgModal(false);
-        }}
-      />
     </Wrapper>
   );
 };
@@ -323,47 +155,6 @@ const Container = styled.div`
   }
 `;
 
-const HeroSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
-  max-width: 680px;
-  margin: 0 auto;
-  padding-top: 20px;
-  @media (max-width: 768px) {
-    padding-top: 8px;
-    gap: 16px;
-  }
-`;
-
-const HeroText = styled.div`
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const PageTitle = styled.h1`
-  font-family: "Montserrat", sans-serif;
-  font-weight: 700;
-  font-size: clamp(22px, 3vw, 32px);
-  line-height: 1.15;
-  letter-spacing: -0.5px;
-  color: ${({ theme }) => theme.primaryText};
-  margin: 0;
-`;
-
-const PageSubtitle = styled.span`
-  font-family: "Montserrat", sans-serif;
-  font-weight: 400;
-  font-size: clamp(16px, 2vw, 22px);
-  color: ${({ theme }) => theme.primaryText};
-  opacity: 0.4;
-  letter-spacing: -0.3px;
-`;
-
 const ProjectsSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -377,6 +168,12 @@ const ProjectsHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+`;
+
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 `;
 
 const ProjectsLabel = styled.p`
@@ -442,33 +239,3 @@ const NoProjectsText = styled.p`
   opacity: 0.5;
   margin: 0;
 `;
-
-const ToolbarActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const ToolbarButton = styled.button`
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.chatTextfieldBorder};
-  background: ${({ theme }) => theme.editorDropDownContent};
-  color: ${({ theme }) => theme.editorFileUpload};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-  &:hover {
-    background: ${({ theme }) => theme.menuListItemActive};
-    color: ${({ theme }) => theme.primaryText};
-    transform: translateY(-1px);
-  }
-`;
-

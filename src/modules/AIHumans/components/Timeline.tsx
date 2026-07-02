@@ -83,7 +83,7 @@ const Timeline = ({
           <ScenesItem
             className={`orientation-${orientation}`}
             isActive={activeSceneId === scene.id}
-            src={scene.background}
+            src={"/images/mock.png"}
             key={scene.id}
             onClick={() => handleChangeActiveScene(scene.id)}
           >
@@ -100,7 +100,7 @@ const Timeline = ({
               className={`orientation-${orientation} ${index === scenes.length - 1 ? "is-last" : ""}`}
             >
               {index === scenes.length - 1 ? (
-                <IconButton onClick={handleOpenTemplatePopup} icon={<PlusIcon />} />
+                <IconButton onClick={handleAddScene} icon={<PlusIcon />} />
               ) : (
                 <IconButton
                   onClick={handleOpenTransitionTab}
@@ -118,7 +118,7 @@ const Timeline = ({
         )}
         {/* horizontal add button moved to last slide's SceneButtonWrapper */}
       </ImagesWrapper>
-      <Bottom className={`orientation-${orientation}`}>
+      {/* <Bottom className={`orientation-${orientation}`}>
         <TimeLineWrapper className={`orientation-${orientation}`}>
           <IconButton iconButtonTheme={IconButtonThemes.Rounded} icon={<PlayIcon />} />
           <TimeLine>
@@ -128,7 +128,7 @@ const Timeline = ({
           </TimeLine>
         </TimeLineWrapper>
         <EstimatedTime className={`orientation-${orientation}`}>Estimated time: 00:49</EstimatedTime>
-      </Bottom>
+      </Bottom> */}
     </Wrapper>
   );
 };

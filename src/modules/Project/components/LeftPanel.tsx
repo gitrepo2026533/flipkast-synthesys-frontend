@@ -33,7 +33,11 @@ interface Paragraph {
   outputVideo?: string;
 }
 
-const LeftPanelSide = () => {
+interface LeftPanelProps {
+  currentSlideId?: number | null;
+}
+
+const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
   const { projectId } = useParams();
   const [prompt, setPrompt] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -170,12 +174,21 @@ const LeftPanelSide = () => {
   };
 
   useEffect(() => {
+    if (!projectData) return;
+
     if (isDraftSlide && draftSlideData?.slideId === 0) {
       setSlideData(draftSlideData);
-    } else if (projectData?.slides?.length) {
-      setSlideData(projectData.slides[0]);
+    } else {
+      const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+      const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
+      
+      if (activeSlide) {
+        setSlideData(activeSlide);
+      } else if (projectData?.slides?.length) {
+        setSlideData(projectData.slides[0]);
+      }
     }
-  }, [projectData, draftSlideData, isDraftSlide]);
+  }, [projectData, draftSlideData, isDraftSlide, currentSlideId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

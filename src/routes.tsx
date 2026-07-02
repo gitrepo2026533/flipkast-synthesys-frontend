@@ -34,6 +34,7 @@ const Router = () => (
       <Route path={pages.settings()} element={<Settings />} />
       <Route path={pages.myStudio()} element={<MyStudio />} />
       <Route path={pages.aiHumans()} element={<AIHumansPage />} />
+      <Route path={pages.aiHumansProject()} element={<AIHumansPage />} />
       <Route path={pages.aiVideo()} element={<AIVideo />} />
       <Route path={pages.aiAvatar()} element={<AIAvatar />} />
       <Route path={pages.project()} element={<Project />} />

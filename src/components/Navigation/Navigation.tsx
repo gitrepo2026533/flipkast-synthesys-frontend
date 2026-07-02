@@ -57,18 +57,18 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
 
   return (
     <Wrapper>
-      {pathname !== "/actors" && pathname !== "/ai-humans" ? (
+      {startAdornment ? (
+        startAdornment
+      ) : pathname !== "/actors" && pathname !== "/ai-humans" ? (
         <LogoLink to="/">
           <LogoIcon />
           <LogoText>AI Photon</LogoText>
         </LogoLink>
-      ) : startAdornment ? (
-        startAdornment
       ) : (
         <div />
       )}
       <Content>
-        {pathname !== "/actors" && pathname !== "/ai-humans" && (
+        {pathname !== "/actors" && pathname !== "/ai-humans" && !startAdornment && (
           <DownloadTime
             hasUnlimited={hasUnlimited}
             title="Download time left"
