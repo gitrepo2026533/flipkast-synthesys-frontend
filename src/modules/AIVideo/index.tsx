@@ -82,12 +82,23 @@ const AiVideo = () => {
   useEffect(() => {
     if (pageNumber === 1) {
       // fresh load or search
-      setProjectsData(videoProjects);
+      if (projectListLoading) {
+        setProjectsData([]);
+      } else {
+        setProjectsData(videoProjects);
+      }
     } else {
       // pagination
-      setProjectsData((prev: any) => [...prev, ...videoProjects]);
+      // Only append if not loading, to avoid appending same items twice
+      if (!projectListLoading) {
+         setProjectsData((prev: any) => {
+            // Prevent duplicate appending by checking if we already have these items
+            const newItems = videoProjects.filter((vp: any) => !prev.find((p: any) => p.projectId === vp.projectId));
+            return [...prev, ...newItems];
+         });
+      }
     }
-  }, [videoProjects]);
+  }, [videoProjects, projectListLoading, pageNumber]);
 
   return (
     <Wrapper>
