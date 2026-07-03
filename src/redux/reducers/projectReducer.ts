@@ -39,6 +39,23 @@ export interface projectStateType {
     hasMore: boolean;
     pageNumber: number;
     totalPages: number;
+    currentProjectTypeId?: number;
+  };
+  [ProjectModules.videoProjectList]: {
+    data: Project[];
+    isLoading: boolean;
+    isDeleteLoading: boolean;
+    hasMore: boolean;
+    pageNumber: number;
+    totalPages: number;
+  };
+  [ProjectModules.avatarProjectList]: {
+    data: Project[];
+    isLoading: boolean;
+    isDeleteLoading: boolean;
+    hasMore: boolean;
+    pageNumber: number;
+    totalPages: number;
   };
   [ProjectModules.project]: {
     project: Project | null;
@@ -62,6 +79,23 @@ export interface projectStateType {
 
 const projectInitialState: projectStateType = {
   [ProjectModules.projectList]: {
+    data: [],
+    isLoading: false,
+    isDeleteLoading: false,
+    hasMore: true,
+    pageNumber: 0,
+    totalPages: 0,
+    currentProjectTypeId: undefined,
+  },
+  [ProjectModules.videoProjectList]: {
+    data: [],
+    isLoading: false,
+    isDeleteLoading: false,
+    hasMore: true,
+    pageNumber: 0,
+    totalPages: 0,
+  },
+  [ProjectModules.avatarProjectList]: {
     data: [],
     isLoading: false,
     isDeleteLoading: false,
@@ -279,25 +313,59 @@ const profileReducer = (state = projectInitialState, action: any) => {
     }
     case `GET_VIDEO_PROJECT_SERVER`: {
       const isFirstPage = action.payload?.request?.data?.pageNumber === 1;
+      const projectTypeId = action.payload?.request?.data?.projectTypeId;
+      const moduleKey =
+        projectTypeId === 2
+          ? ProjectModules.videoProjectList
+          : projectTypeId === 6
+          ? ProjectModules.avatarProjectList
+          : ProjectModules.projectList;
+
       return {
         ...state,
-        [ProjectModules.projectList]: {
-          ...state[ProjectModules.projectList],
-          data: isFirstPage ? [] : state[ProjectModules.projectList].data,
+        [moduleKey]: {
+          ...state[moduleKey],
+          data: isFirstPage ? [] : state[moduleKey].data,
           isLoading: true,
         },
       };
     }
     case `${GET_VIDEO_PROJECT_SERVER}_SUCCESS`: {
+      const projectTypeId = action.meta?.previousAction?.payload?.request?.data?.projectTypeId;
+      const moduleKey =
+        projectTypeId === 2
+          ? ProjectModules.videoProjectList
+          : projectTypeId === 6
+          ? ProjectModules.avatarProjectList
+          : ProjectModules.projectList;
+
       return {
         ...state,
-        [ProjectModules.projectList]: {
+        [moduleKey]: {
+          ...state[moduleKey],
           data: action.payload.data.data,
           isLoading: false,
           pageNumber: action.payload.data.pageNumber,
           hasMore: action.payload.data.HasMore || false,
           totalPages: action.payload.data.totalPages,
           isDeleteLoading: false,
+        },
+      };
+    }
+    case `${GET_VIDEO_PROJECT_SERVER}_FAIL`: {
+      const projectTypeId = action.meta?.previousAction?.payload?.request?.data?.projectTypeId;
+      const moduleKey =
+        projectTypeId === 2
+          ? ProjectModules.videoProjectList
+          : projectTypeId === 6
+          ? ProjectModules.avatarProjectList
+          : ProjectModules.projectList;
+
+      return {
+        ...state,
+        [moduleKey]: {
+          ...state[moduleKey],
+          isLoading: false,
         },
       };
     }
@@ -596,6 +664,16 @@ export const getIsDeleteLoading = (state: StoreType) => state.project[ProjectMod
 export const getTotalPages = (state: StoreType) => state.project[ProjectModules.projectList].totalPages;
 export const getHasMore = (state: StoreType) => state.project[ProjectModules.projectList].hasMore;
 export const getProjectListPageNumber = (state: StoreType) => state.project[ProjectModules.projectList].pageNumber;
+
+export const getVideoProjectList = (state: StoreType) => state.project[ProjectModules.videoProjectList].data;
+export const getVideoProjectListLoading = (state: StoreType) =>
+  state.project[ProjectModules.videoProjectList].isLoading;
+export const getVideoTotalPages = (state: StoreType) => state.project[ProjectModules.videoProjectList].totalPages;
+
+export const getAvatarProjectList = (state: StoreType) => state.project[ProjectModules.avatarProjectList].data;
+export const getAvatarProjectListLoading = (state: StoreType) =>
+  state.project[ProjectModules.avatarProjectList].isLoading;
+export const getAvatarTotalPages = (state: StoreType) => state.project[ProjectModules.avatarProjectList].totalPages;
 
 export const getProject = (state: StoreType) => state.project[ProjectModules.project].project;
 export const getProjectLoading = (state: StoreType) => state.project[ProjectModules.project].isLoading;
