@@ -10,7 +10,7 @@ import Button from "../../components/Button/Button";
 import withPrivateRoute from "../../hocs/withPrivateRoute";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import { getVideoProjectServer, ProjectType } from "../../redux/actions/projectAction";
-import { getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
+import { getAvatarProjectList, getAvatarProjectListLoading, getAvatarTotalPages } from "../../redux/reducers/projectReducer";
 import VideoProjectCard from "../AIVideo/components/VideoProjectCard";
 
 const AiAvatar = () => {
@@ -24,9 +24,9 @@ const AiAvatar = () => {
   const [sortWith, setSortWith] = useState("updateDateTime");
   const [sortByDesc, setSortByDesc] = useState(true);
 
-  const videoProjects = useSelector(getProjectList);
-  const projectListLoading = useSelector(getProjectListLoading);
-  const totalPages = useSelector(getTotalPages);
+  const videoProjects = useSelector(getAvatarProjectList);
+  const projectListLoading = useSelector(getAvatarProjectListLoading);
+  const totalPages = useSelector(getAvatarTotalPages);
 
   const [projectsData, setProjectsData] = useState<any[]>([]);
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);

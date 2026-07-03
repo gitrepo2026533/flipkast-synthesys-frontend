@@ -67,6 +67,8 @@ export interface ProjectList {
 
 export enum ProjectModules {
   "projectList" = "projectList",
+  "videoProjectList" = "videoProjectList",
+  "avatarProjectList" = "avatarProjectList",
   "project" = "project",
   "autoSave" = "autoSave",
 }

@@ -10,7 +10,7 @@ import Textfield from "../../components/Textfield/Textfield";
 import withPrivateRoute from "../../hocs/withPrivateRoute";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import { createVideoProjectServer, getVideoProjectServer, resetCreatedProject } from "../../redux/actions/projectAction";
-import { createProjectLoading, getCreatedProject, getProjectList, getProjectListLoading, getTotalPages } from "../../redux/reducers/projectReducer";
+import { createProjectLoading, getCreatedProject, getVideoProjectList, getVideoProjectListLoading, getVideoTotalPages } from "../../redux/reducers/projectReducer";
 import VideoProjectCard from "./components/VideoProjectCard";
 import { chips, models } from "./data";
 
@@ -28,11 +28,11 @@ const AiVideo = () => {
   const [status, setStatus] = useState(null)
   const [sortWith, setSortWith] = useState("updateDateTime")
   const [sortByDesc, setSortByDesc] = useState(true)
-  const videoProjects = useSelector(getProjectList)
+  const videoProjects = useSelector(getVideoProjectList)
   const isCreatingProject = useSelector(createProjectLoading)
   const createdProject = useSelector(getCreatedProject)
-  const projectListLoading = useSelector(getProjectListLoading)
-  const totalPages = useSelector(getTotalPages)
+  const projectListLoading = useSelector(getVideoProjectListLoading)
+  const totalPages = useSelector(getVideoTotalPages)
   const [projectsData, setProjectsData] = useState<any[]>([]);
   const [debouncedKeyword, setDebouncedKeyword] = useState(keyword);
 
