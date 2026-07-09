@@ -104,14 +104,14 @@ const HomePage = () => {
                 title={product.title}
                 description={product.description}
                 link={product.link}
-                action={product.title === "AI Humans" ? handleOpenHumansPopup : undefined}
+                // action={product.title === "AI Humans" ? handleOpenHumansPopup : undefined}
               />
             ))}
           </ProductWrapper>
-          <ButtonWrapper>
+          {/* <ButtonWrapper>
             <Button text="Create new project" onClick={handleOpenNewProjectPopup} />
-          </ButtonWrapper>
-          <Title>Recent projects</Title>
+          </ButtonWrapper> */}
+          {/* <Title>Recent projects</Title>
           <ProjectsWrapper>
             {isLoading ? (
               <CircularProgress color="#009af7" />
@@ -136,7 +136,7 @@ const HomePage = () => {
                   })}
               </SliderStyled>
             )}
-          </ProjectsWrapper>
+          </ProjectsWrapper> */}
         </Content>
       </SidebarLayout>
     </Wrapper>

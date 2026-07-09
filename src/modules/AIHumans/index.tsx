@@ -44,6 +44,12 @@ const screens = [
   { id: 2, icon: <MobileIcon /> },
 ];
 
+const ProjectStatus: Record<number, string> = {
+  1: "pending",
+  2: "in progress",
+  3: "completed",
+};
+
 const initialParagraphsData = [
   {
     actorId: 1,
@@ -266,6 +272,9 @@ const AIHumansPage = () => {
         });
         if (projectData.title) {
           setTitle(projectData.title);
+        }
+        if (projectData.status) {
+          setGenerationStatus(ProjectStatus[Number(projectData.status)] as any);
         }
       }
     }
