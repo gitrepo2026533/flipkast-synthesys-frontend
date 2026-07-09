@@ -143,7 +143,7 @@ const AiVideo = () => {
                     <VideoProjectCard
                       key={project.projectId}
                       title={project.title}
-                      image={project.coverImage ? `http://192.168.1.80:7132${project.coverImage}` : "https://picsum.photos/536/354"}
+                      image={project.coverImage ? `${process.env.REACT_APP_MEDIA_BASE_URL}${project.coverImage}` : "https://picsum.photos/536/354"}
                       preViewVideo={project?.output}
                       onClick={() => navigate(`/ai-video/projects/${project.projectId}`)}
                     />

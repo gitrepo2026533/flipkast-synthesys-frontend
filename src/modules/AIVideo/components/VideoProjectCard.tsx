@@ -55,7 +55,7 @@ const VideoProjectCard = ({
         {preViewVideo && preViewVideo !== null && (
           <PreviewVideo
             ref={videoRef}
-            src={`http://192.168.1.80:7132/${preViewVideo}`}
+            src={`${process.env.REACT_APP_MEDIA_BASE_URL}/${preViewVideo}`}
             muted
             loop
             playsInline

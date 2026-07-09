@@ -12,7 +12,7 @@ interface Props {
     id: number;
     image: string;
   }[];
-  handleAddAvatar: (src: string) => void;
+  handleAddAvatar: (src: string, id?: number) => void;
   updateSize: (size: { width: string | number; height: string | number }, id: number, objType: ObjectTypes) => void;
   onLoadMore?: () => void;
 }
@@ -37,7 +37,7 @@ const HumatarSidebar = ({ data, handleAddAvatar, updateSize, onLoadMore }: Props
       {!modeSelection ? (
         <ViewContent>
           {data.map(({ id, image }) => (
-            <img key={id} src={image} onClick={() => handleAddAvatar(image)} />
+            <img key={id} src={image} onClick={() => handleAddAvatar(image, id)} />
           ))}
         </ViewContent>
       ) : (

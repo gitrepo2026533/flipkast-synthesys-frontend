@@ -11,6 +11,7 @@ import {
   CREATE_AVATAR_PROJECT_SERVER,
   CREATE_PROJECT_SERVER,
   CREATE_VIDEO_PROJECT_SERVER,
+  CREATE_AI_HUMAN_PROJECT_SERVER,
   DELETE_PROJECT_SERVER,
   DELETE_PROJECT_SLIDE_SERVER,
   GET_PREVIEW_PROJECT_SERVER,
@@ -370,7 +371,8 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case CREATE_VIDEO_PROJECT_SERVER:
-    case CREATE_AVATAR_PROJECT_SERVER: {
+    case CREATE_AVATAR_PROJECT_SERVER:
+    case CREATE_AI_HUMAN_PROJECT_SERVER: {
       return {
         ...state,
         [ProjectModules.project]: {
@@ -380,7 +382,8 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case `${CREATE_VIDEO_PROJECT_SERVER}_SUCCESS`:
-    case `${CREATE_AVATAR_PROJECT_SERVER}_SUCCESS`: {
+    case `${CREATE_AVATAR_PROJECT_SERVER}_SUCCESS`:
+    case `${CREATE_AI_HUMAN_PROJECT_SERVER}_SUCCESS`: {
       return {
         ...state,
         [ProjectModules.project]: {
@@ -391,8 +394,9 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case `${CREATE_VIDEO_PROJECT_SERVER}_FAIL`:
-    case `${CREATE_AVATAR_PROJECT_SERVER}_FAIL`: {
-      toast.error("Failed to create avatar project. Please try again.");
+    case `${CREATE_AVATAR_PROJECT_SERVER}_FAIL`:
+    case `${CREATE_AI_HUMAN_PROJECT_SERVER}_FAIL`: {
+      toast.error("Failed to create project. Please try again.");
       return {
         ...state,
         [ProjectModules.project]: {

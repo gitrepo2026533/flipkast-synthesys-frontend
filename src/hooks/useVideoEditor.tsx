@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Position, ResizableDelta } from "react-rnd";
 import { ObjectTypes, SceneObject, Scene as SceneType, ShapeTypes, TextAlign, TextTypes } from "../types/scene";
 import { useVideoSceneHistory } from "./useVideoSceneHistory";
+import { sidebar, BackgroundProps } from "../mocks/humans";
+import { ProfileHumanSidebarType } from "../types/human";
 
 const DEFAULT_OBJECT_POSITION = { x: 10, y: 10 };
 
@@ -65,11 +67,20 @@ export const useVideoEditor = () => {
     setScenes((scenes) => [...scenes, { ...prevScene, id: Math.random() }]);
   };
 
-  const addScene = () => {
+  const addScene = (initialBackground?: string) => {
     const rand = Math.random();
+
+    let bgImage = initialBackground;
+    if (!bgImage) {
+      // Extract first background image from mock data
+      const bgCategory = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background);
+      const imageCategory = (bgCategory?.data as any[])?.find((c: any) => c.type === BackgroundProps.IMAGE);
+      bgImage = imageCategory?.data?.[0]?.image || "/images/mock1.png";
+    }
+
     const newScene = {
       id: rand,
-      background: "/images/mock1.png",
+      background: bgImage || "/images/mock1.png",
       activeObjectId: 0,
       editableTextId: 0,
       objects: [],
@@ -79,13 +90,16 @@ export const useVideoEditor = () => {
     setActiveSceneId(rand);
   };
 
-  const setScenesExternal = (newScenes: SceneType[]) => {
-    setScenes(newScenes);
-    setActiveSceneId((prevId) => {
-      if (newScenes.some((scene) => scene.id === prevId)) {
-        return prevId;
-      }
-      return newScenes.length > 0 ? newScenes[0].id : NaN;
+  const setScenesExternal = (newScenes: SceneType[] | ((prev: SceneType[]) => SceneType[])) => {
+    setScenes((prevScenes) => {
+      const resolvedScenes = typeof newScenes === "function" ? newScenes(prevScenes) : newScenes;
+      setActiveSceneId((prevId) => {
+        if (resolvedScenes.some((scene) => scene.id === prevId)) {
+          return prevId;
+        }
+        return resolvedScenes.length > 0 ? resolvedScenes[0].id : NaN;
+      });
+      return resolvedScenes;
     });
   };
 
@@ -138,20 +152,36 @@ export const useVideoEditor = () => {
     updateScene({ ...currentScene, objects: newObjects, activeObjectId: rand });
   };
 
-  const handleAddAvatar = (src: string) => {
+  const handleAddAvatar = (src: string, id?: number) => {
     if (!currentScene) return;
-    const rand = Math.random();
-    const newAvatar = {
-      type: ObjectTypes.avatars,
-      object: {
-        id: rand,
-        position: DEFAULT_AVATAR_POSITION,
-        size: DEFAULT_AVATAR_SIZE,
-        src,
-      },
-    };
-    const newObjects = [...currentScene.objects, newAvatar];
-    updateScene({ ...currentScene, objects: newObjects, activeObjectId: rand });
+    const existingAvatarIndex = currentScene.objects.findIndex((obj) => obj.type === ObjectTypes.avatars);
+
+    if (existingAvatarIndex !== -1) {
+      const newObjects = [...currentScene.objects];
+      const existingId = newObjects[existingAvatarIndex].object.id;
+      newObjects[existingAvatarIndex] = {
+        ...newObjects[existingAvatarIndex],
+        object: {
+          ...newObjects[existingAvatarIndex].object,
+          src,
+          id: id || existingId,
+        },
+      };
+      updateScene({ ...currentScene, objects: newObjects, activeObjectId: id || existingId });
+    } else {
+      const rand = Math.random();
+      const newAvatar = {
+        type: ObjectTypes.avatars,
+        object: {
+          id: id || rand,
+          position: DEFAULT_AVATAR_POSITION,
+          size: DEFAULT_AVATAR_SIZE,
+          src,
+        },
+      };
+      const newObjects = [...currentScene.objects, newAvatar];
+      updateScene({ ...currentScene, objects: newObjects, activeObjectId: id || rand });
+    }
   };
 
   const handleChangeActiveObject = (id: number) => {
