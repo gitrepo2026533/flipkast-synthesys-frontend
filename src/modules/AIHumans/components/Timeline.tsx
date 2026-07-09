@@ -76,8 +76,14 @@ const Timeline = ({
     setActiveSidebarItem(ProfileHumanSidebarType.Transitions);
   };
 
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (orientation === "horizontal") {
+      event.currentTarget.scrollLeft += event.deltaY;
+    }
+  };
+
   return (
-    <Wrapper className={`orientation-${orientation}`}>
+    <Wrapper className={`orientation-${orientation}`} onWheel={handleWheel}>
       <ImagesWrapper className={`orientation-${orientation}`}>
         {scenes.map((scene, index: number) => (
           <ScenesItem
@@ -140,16 +146,29 @@ const Wrapper = styled.div`
   gap: 16px;
   position: relative;
   max-height: calc(100% - 89px);
+  overflow-y: auto;
 
   &.orientation-horizontal {
     width: 100%;
     flex-direction: row;
     align-items: flex-start;
     height: 140px;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   ::-webkit-scrollbar {
     width: 0;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background-color: ${({ theme }) => theme.activeMenu};
+  }
+
+  ::-webkit-scrollbar-track {
+    margin: 0 15px;
   }
 `;
 

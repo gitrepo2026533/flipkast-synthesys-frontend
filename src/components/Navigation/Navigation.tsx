@@ -68,19 +68,19 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
         <div />
       )}
       <Content>
-        {pathname !== "/actors" && pathname !== "/ai-humans" && !startAdornment && (
+        {/* {pathname !== "/actors" && pathname !== "/ai-humans" && !startAdornment && (
           <DownloadTime
             hasUnlimited={hasUnlimited}
             title="Download time left"
             timeLeft={`${formatMinutes(totalSeconds - usedSeconds)} out of ${formatMinutes(totalSeconds)}`}
             progress={parseFloat(downloadTime.usedPercentage)}
           />
-        )}
+        )} */}
         {children}
         {withThemeSwitcher && <ThemeSwitcher />}
         {pathname !== "/actors" && pathname !== "/ai-humans" && (
           <Actions>
-            <Link to="/my-studio">
+            {/* <Link to="/my-studio">
               <IconButton iconButtonTheme={IconButtonThemes.Secondary} icon={<FolderIcon />} />
             </Link>
             <IconButton
@@ -88,7 +88,7 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
               iconButtonTheme={IconButtonThemes.Secondary}
               icon={<NotificateIcon />}
               className="notificate"
-            />
+            /> */}
             <Link to="/settings">
               <ImageWrapper>{source ? <img src={source} alt="" onError={handleLoadingError} /> : <div />}</ImageWrapper>
             </Link>

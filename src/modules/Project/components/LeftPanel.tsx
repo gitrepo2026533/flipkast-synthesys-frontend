@@ -271,7 +271,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                             }
                           >
                             <video
-                              src={`http://192.168.1.80:7132/${para.outputAudio}`}
+                              src={`${process.env.REACT_APP_MEDIA_BASE_URL}/${para.outputAudio}`}
                               controls
                               autoPlay={false}
                               preload="metadata"
@@ -350,7 +350,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                       }}
                     >
                       <VideoPreview
-                        src={`http://192.168.1.80:7132/${para.outputAudio}`}
+                        src={`${process.env.REACT_APP_MEDIA_BASE_URL}/${para.outputAudio}`}
                         muted
                         preload="metadata"
                         playsInline

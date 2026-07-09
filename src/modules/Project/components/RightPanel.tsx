@@ -219,7 +219,7 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
             >
-              <source src={`http://192.168.1.80:7132${videoSrc}`} type="video/mp4" />
+              <source src={`${process.env.REACT_APP_MEDIA_BASE_URL}${videoSrc}`} type="video/mp4" />
               Your browser does not support HTML5 video.
             </StyledVideo>
           </PlayerCard>

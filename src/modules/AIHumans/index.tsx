@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Button, { ButtonThemes } from "../../components/Button/Button";
+import Textfield, { TextfieldVariant } from "../../components/Textfield/Textfield";
+import { toast } from "react-toastify";
 import IconButton, { IconButtonThemes } from "../../components/Button/IconButton";
 import { ArrowRight, DesktopIcon } from "../../components/Icons/Icons";
 import { MobileIcon } from "../../components/Icons/MobileIcon";
@@ -16,22 +18,37 @@ import {
   getVideoByProjectIdServer,
   getProjectSlideServer,
   clearCurrentProject,
+  createAiHumanProjectServer,
+  updateAiHumanProjectServer,
+  resetCreatedProject,
+  generateVideoProjectServer,
 } from "../../redux/actions/projectAction";
-import { getProject } from "../../redux/reducers/projectReducer";
+import { getProject, getCreatedProject } from "../../redux/reducers/projectReducer";
+import { getUserAssets } from "../../redux/reducers/profileReducer";
+import { pages } from "../../lib/routeUtils";
 import { IActor } from "../../types/actor";
 import { ProfileHumanSidebarType } from "../../types/human";
 import { Paragraphs } from "../../types/project";
+import { StoreType } from "../../types/store";
+import { ProfileModules } from "../../types/profile";
 import Scene from "../ScenesPoc/components/Scene";
 import Modal from "../../components/Modal/Modal";
 import ProfileHumanSidebar from "./components/ProfileHumanSidebar";
 import Sidebar from "./components/Sidebar";
 import SoundFeaturesSettingsCard from "./components/SoundFeaturesSettingsCard";
 import Timeline from "./components/Timeline";
+import { CheckIcon } from "../../components/Icons/CheckIcon";
 
 const screens = [
   { id: 1, icon: <DesktopIcon /> },
   { id: 2, icon: <MobileIcon /> },
 ];
+
+const ProjectStatus: Record<number, string> = {
+  1: "pending",
+  2: "in progress",
+  3: "completed",
+};
 
 const initialParagraphsData = [
   {
@@ -57,9 +74,19 @@ const AIHumansPage = () => {
   const dispatch = useDispatch();
   const actorsList = useSelector(getActorsList);
   const projectData = useSelector(getProject);
+  const createdProject = useSelector(getCreatedProject);
+  const userAssets = useSelector(getUserAssets);
+  const userAssetsLoading = useSelector((state: StoreType) => state.profile[ProfileModules.userAssets]?.isLoading);
+  const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
+  const [initialSceneAdded, setInitialSceneAdded] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [activeSidebarItem, setActiveSidebarItem] = useState(ProfileHumanSidebarType.Background);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [generatedVideoPath, setGeneratedVideoPath] = useState<string | null>(null);
+  const [generationStatus, setGenerationStatus] = useState<"idle" | "pending" | "in progress" | "completed" | "failed">(
+    "idle",
+  );
+  const [title, setTitle] = useState("");
 
   const [paragraphs, setParagraphs] = useState<Paragraphs[]>(initialParagraphsData);
   const [paragraphActive, setParagraphActive] = useState<number>();
@@ -183,7 +210,7 @@ const AIHumansPage = () => {
                 },
                 src: slide.aiHumanActor.photo?.startsWith("http")
                   ? slide.aiHumanActor.photo
-                  : `https://dev.synthesys.live${slide.aiHumanActor.photo}`,
+                  : `${process.env.REACT_APP_SYNTHESYS_URL}${slide.aiHumanActor.photo}`,
               },
             });
           }
@@ -217,9 +244,38 @@ const AIHumansPage = () => {
             editableTextId: 0,
             objects: objects,
             script: text,
+            projectParagraphId: slide.projectParagraphs?.[0]?.projectParagraphId,
           };
         });
-        setScenesExternal(mappedScenes);
+        setScenesExternal((prevScenes: any[]) => {
+          if (prevScenes.length === 0) return mappedScenes;
+
+          const newScenes = [...prevScenes];
+          mappedScenes.forEach((mapped) => {
+            const index = newScenes.findIndex((p) => p.id === mapped.id);
+            if (index === -1) {
+              newScenes.push(mapped);
+            } else {
+              newScenes[index] = {
+                ...mapped,
+                script: prevScenes[index].script || mapped.script,
+                objects: prevScenes[index].objects.length > 0 ? prevScenes[index].objects : mapped.objects,
+                background:
+                  prevScenes[index].background !== "/images/mock1.png"
+                    ? prevScenes[index].background
+                    : mapped.background,
+                projectParagraphId: prevScenes[index].projectParagraphId || mapped.projectParagraphId,
+              };
+            }
+          });
+          return newScenes;
+        });
+        if (projectData.title) {
+          setTitle(projectData.title);
+        }
+        if (projectData.status) {
+          setGenerationStatus(ProjectStatus[Number(projectData.status)] as any);
+        }
       }
     }
   }, [projectData, projectId]);
@@ -233,7 +289,190 @@ const AIHumansPage = () => {
     }
   }, [activeSceneId, projectData, projectId, dispatch]);
 
-  if (!scenes.length && !projectId) addScene();
+  const handleCreateVideo = async () => {
+    if (!title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    const payloadSlides = scenes.map((scene: any) => {
+      let bgId: string | number | undefined = undefined;
+
+      const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
+      if (userAssetMatch) {
+        bgId = userAssetMatch.userAssetID;
+      } else {
+        const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+        mockBgData.forEach((category: any) => {
+          if (category.data) {
+            const match = category.data.find((b: any) => b.image === scene.background || b.video === scene.background);
+            if (match) bgId = match.id;
+          }
+        });
+      }
+
+      const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
+      const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
+
+      return {
+        ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
+        backGroundAssetId: bgId,
+        aiHumanActorId: selectedActorId,
+        projectParagraphs: [
+          {
+            ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
+            actorId: selectedActorId || 12270,
+            Text: scene.script || "",
+          },
+        ],
+      };
+    });
+
+    if (projectId) {
+      const response: any = await dispatch(
+        updateAiHumanProjectServer({
+          projectId: Number(projectId),
+          title: title,
+          slides: payloadSlides,
+        }),
+      );
+      if (response?.error) {
+        toast.error("Failed to save project as draft");
+      } else {
+        toast.success("Project saved as draft successfully");
+      }
+    } else {
+      const response: any = await dispatch(
+        createAiHumanProjectServer({
+          title: title,
+          slides: payloadSlides,
+        }),
+      );
+      if (response?.error) {
+        toast.error("Failed to save project as draft");
+      } else {
+        toast.success("Project saved as draft successfully");
+      }
+    }
+  };
+
+  const onGenerate = async () => {
+    if (!title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    setGenerationStatus("pending");
+
+    const payloadSlides = scenes.map((scene: any) => {
+      let bgId: string | number | undefined = undefined;
+
+      const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
+      if (userAssetMatch) {
+        bgId = userAssetMatch.userAssetID;
+      } else {
+        const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+        mockBgData.forEach((category: any) => {
+          if (category.data) {
+            const match = category.data.find((b: any) => b.image === scene.background || b.video === scene.background);
+            if (match) bgId = match.id;
+          }
+        });
+      }
+
+      const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
+      const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
+
+      return {
+        ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
+        backGroundAssetId: bgId,
+        aiHumanActorId: selectedActorId,
+        projectParagraphs: [
+          {
+            ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
+            actorId: selectedActorId || 12270,
+            Text: scene.script || "",
+          },
+        ],
+      };
+    });
+
+    let targetProjectId = projectId;
+
+    if (projectId) {
+      const response: any = await dispatch(
+        updateAiHumanProjectServer({
+          projectId: Number(projectId),
+          title: title,
+          slides: payloadSlides,
+        }),
+      );
+      if (response?.error) {
+        setGenerationStatus("failed");
+        toast.error("Failed to update project");
+        return;
+      }
+      toast.success("Project updated successfully");
+    } else {
+      const response: any = await dispatch(
+        createAiHumanProjectServer({
+          title: title,
+          slides: payloadSlides,
+        }),
+      );
+      if (response?.error) {
+        setGenerationStatus("failed");
+        toast.error("Failed to create project");
+        return;
+      }
+      toast.success("Project created successfully");
+      targetProjectId = response?.payload?.data?.data?.projectId;
+    }
+
+    if (targetProjectId) {
+      setGenerationStatus("in progress");
+      try {
+        const response: any = await dispatch(generateVideoProjectServer(Number(targetProjectId)));
+        const result = response?.payload?.data;
+        if (result?.succeeded && result?.data?.path) {
+          setGeneratedVideoPath(result.data.path);
+          setGenerationStatus("completed");
+        } else {
+          setGenerationStatus("failed");
+        }
+      } catch (error) {
+        console.error("Error generating video", error);
+        setGenerationStatus("failed");
+      }
+    } else {
+      setGenerationStatus("failed");
+    }
+  };
+
+  useEffect(() => {
+    if (createdProject?.projectId) {
+      navigate(pages.aiHumansProject().replace(":projectId", createdProject.projectId.toString()));
+      dispatch(resetCreatedProject());
+    }
+  }, [createdProject, navigate, dispatch]);
+
+  useEffect(() => {
+    if (userAssetsLoading) {
+      setHasFetchedAssets(true);
+    }
+  }, [userAssetsLoading]);
+
+  const handleAddScene = () => {
+    const firstAssetPath = userAssets && userAssets.length > 0 ? userAssets[0].path : undefined;
+    addScene(firstAssetPath);
+  };
+
+  useEffect(() => {
+    if (!scenes.length && !projectId && hasFetchedAssets && !userAssetsLoading && !initialSceneAdded) {
+      handleAddScene();
+      setInitialSceneAdded(true);
+    }
+  }, [scenes.length, projectId, hasFetchedAssets, userAssetsLoading, initialSceneAdded, userAssets, addScene]);
 
   return (
     <Wrapper>
@@ -248,6 +487,12 @@ const AIHumansPage = () => {
                 icon={<img src="/images/arrow-left.svg" />}
                 text="Back"
                 onClick={() => navigate("/ai-avatar")}
+              />
+              <Textfield
+                variant={TextfieldVariant.noneAdornment}
+                placeholder="Enter project title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
               {/* <ScreenButton>
                 {screens.map(({ id, icon }) => (
@@ -264,14 +509,42 @@ const AIHumansPage = () => {
           }
           navActions={
             <ButtonWrapper>
+              {generationStatus !== "idle" && (
+                <StatusBadge status={generationStatus === "in progress" ? "inprogress" : generationStatus}>
+                  {generationStatus}
+                </StatusBadge>
+              )}
               <Button
                 buttonTheme={ButtonThemes.Secondary}
                 text="Preview"
                 onClick={() => setIsPreviewOpen(true)}
-                disabled={!projectData?.output || projectData?.projectId !== Number(projectId)}
+                disabled={
+                  !(generatedVideoPath || (projectData?.output && projectData?.projectId === Number(projectId)))
+                }
               />
-              <Button buttonTheme={ButtonThemes.Transparent} text="Save as draft" />
-              <Button text="Create Video" />
+              <Button buttonTheme={ButtonThemes.Transparent} text="Save as draft" onClick={handleCreateVideo} />
+              {/* <Button text="Generate" onClick={handleCreateVideo} /> */}
+              <Button
+                text="Generate"
+                icon={<CheckIcon />}
+                onClick={onGenerate}
+                disabled={
+                  // Number(projectData?.status) === 2 ||
+                  // Number(projectData?.status) === 3 ||
+                  generationStatus === "pending" || generationStatus === "in progress"
+                }
+                buttonTheme={ButtonThemes.Outline}
+                style={{
+                  height: "40px",
+                  padding: "0 14px",
+                  gap: "6px",
+                  fontSize: "12px",
+                  fontWeight: "500",
+                  borderRadius: "8px",
+                  width: "auto",
+                  minWidth: "100px",
+                }}
+              />
             </ButtonWrapper>
           }
         >
@@ -312,7 +585,7 @@ const AIHumansPage = () => {
                 <Timeline
                   scenes={scenes}
                   activeSceneId={activeSceneId}
-                  addScene={addScene}
+                  addScene={handleAddScene}
                   dublicateScene={dublicateScene}
                   handleDeleteScene={handleDeleteScene}
                   handleChangeActiveScene={handleChangeActiveScene}
@@ -339,9 +612,16 @@ const AIHumansPage = () => {
       <Modal open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} maxWidth={800}>
         {isPreviewOpen && (
           <VideoPreviewWrapper>
-            {projectData?.output && projectData?.projectId === Number(projectId) ? (
-              <video width="100%" controls autoPlay key={projectData.output}>
-                <source src={`http://192.168.1.80:7132${projectData.output}`} type="video/mp4" />
+            {generatedVideoPath || (projectData?.output && projectData?.projectId === Number(projectId)) ? (
+              <video width="100%" controls autoPlay key={generatedVideoPath || projectData?.output}>
+                <source
+                  src={
+                    generatedVideoPath
+                      ? `${process.env.REACT_APP_API_BASE_URL}/${generatedVideoPath}`
+                      : `${process.env.REACT_APP_MEDIA_BASE_URL}/${projectData?.output}`
+                  }
+                  type="video/mp4"
+                />
                 Your browser does not support the video tag.
               </video>
             ) : (
@@ -377,18 +657,25 @@ const Heading = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
-  width: 100%;
-  max-width: 272px;
+  width: auto;
   gap: 24px;
 
   & > button {
-    max-width: 272px;
-    width: 100%;
+    width: fit-content;
+    padding: 0 16px;
     justify-content: flex-start;
   }
 
   & > div {
+    min-width: 300px;
     width: 100%;
+
+    input {
+      border-radius: 12px;
+      height: 48px;
+      font-size: 16px;
+      font-weight: 500;
+    }
   }
 `;
 
@@ -397,6 +684,7 @@ const Content = styled.div`
   flex-direction: row;
   gap: 16px;
   height: 100%;
+  min-width: 0;
 `;
 
 const Left = styled.div`
@@ -416,6 +704,7 @@ const Right = styled.div`
   flex-direction: row;
   width: 100%;
   gap: 16px;
+  min-width: 0;
 
   & > div:first-of-type {
     flex: 1;
@@ -423,6 +712,7 @@ const Right = styled.div`
     flex-direction: column;
     gap: 16px;
     align-items: center;
+    min-width: 0;
   }
 `;
 
@@ -526,6 +816,61 @@ const ButtonWrapper = styled.div`
       letter-spacing: -0.41px;
     }
   }
+`;
+
+const StatusBadge = styled.div<{ status?: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  text-transform: capitalize;
+
+  background: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "rgba(255, 159, 10, 0.12)";
+      case "inprogress":
+        return "rgba(0, 122, 255, 0.12)";
+      case "completed":
+        return "rgba(52, 199, 89, 0.12)";
+      default:
+        return "rgba(140,140,140,0.12)";
+    }
+  }};
+
+  color: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "#FF9F0A";
+      case "inprogress":
+        return "#007AFF";
+      case "completed":
+        return "#34C759";
+      default:
+        return "#999999";
+    }
+  }};
+
+  border-color: ${({ status }) => {
+    switch (status) {
+      case "pending":
+        return "rgba(255, 159, 10, 0.25)";
+      case "inprogress":
+        return "rgba(0, 122, 255, 0.25)";
+      case "completed":
+        return "rgba(52, 199, 89, 0.25)";
+      default:
+        return "rgba(140,140,140,0.2)";
+    }
+  }};
 `;
 
 export default AIHumansPage;

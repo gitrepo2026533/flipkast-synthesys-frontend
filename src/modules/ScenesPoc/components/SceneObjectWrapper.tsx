@@ -35,6 +35,7 @@ const SceneObjectWrapper = ({
   const handlChangeActive = (event: React.MouseEvent<HTMLElement>, id: number) => {
     event.stopPropagation();
     if (objectType === ObjectTypes.texts) return;
+    if (objectType === ObjectTypes.avatars) return;
     handleChangeActiveObject(id);
   };
   return (
@@ -53,8 +54,13 @@ const SceneObjectWrapper = ({
       editableTextId={editableTextId}
       scale={scale}
     >
-      <ObjectWrapper onClick={(event) => handlChangeActive(event, obj.id)} active={activeObjectId === obj.id}>
-        <DragResizeFrameWrapper active={activeObjectId === obj.id && editableTextId !== obj.id}>
+      <ObjectWrapper
+        onClick={(event) => handlChangeActive(event, obj.id)}
+        active={activeObjectId === obj.id && objectType !== ObjectTypes.avatars}
+      >
+        <DragResizeFrameWrapper
+          active={activeObjectId === obj.id && editableTextId !== obj.id && objectType !== ObjectTypes.avatars}
+        >
           <DragResizeFrame />
         </DragResizeFrameWrapper>
         {children}

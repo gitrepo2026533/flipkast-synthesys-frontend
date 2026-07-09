@@ -15,6 +15,8 @@ export const CREATE_VIDEO_PROJECT = "CREATE_VIDEO_PROJECT";
 // video project actions
 export const CREATE_VIDEO_PROJECT_SERVER = "CREATE_VIDEO_PROJECT_SERVER";
 export const CREATE_AVATAR_PROJECT_SERVER = "CREATE_AVATAR_PROJECT_SERVER";
+export const CREATE_AI_HUMAN_PROJECT_SERVER = "CREATE_AI_HUMAN_PROJECT_SERVER";
+export const UPDATE_AI_HUMAN_PROJECT_SERVER = "UPDATE_AI_HUMAN_PROJECT_SERVER";
 export const GET_VIDEO_PROJECT_SERVER = "GET_VIDEO_PROJECT_SERVER";
 export const GET_PROJECT_SLIDE_SERVER = "GET_PROJECT_SLIDE_SERVER";
 export const GET_VIDEO_BY_PROJECT_ID_SERVER = "GET_VIDEO_BY_PROJECT_ID_SERVER";
@@ -63,6 +65,24 @@ interface createAvatarProjectServerProps {
   avatarId: number;
   backgroundId: string | number;
   voiceId?: number;
+}
+
+interface createAiHumanProjectServerProps {
+  title?: string;
+  slides: {
+    SlideId?: number;
+    backGroundAssetId?: number | string;
+    aiHumanActorId?: number | string;
+    projectParagraphs: {
+      projectParagraphId?: number;
+      actorId?: number;
+      Text: string;
+    }[];
+  }[];
+}
+
+interface updateAiHumanProjectServerProps extends createAiHumanProjectServerProps {
+  projectId: number;
 }
 
 interface GetVideoProjectServerProps {
@@ -297,6 +317,49 @@ export const createAvatarProjectServer = ({
             ],
           },
         ],
+      },
+    },
+  },
+});
+
+export const createAiHumanProjectServer = (data: createAiHumanProjectServerProps) => ({
+  type: CREATE_AI_HUMAN_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: "/project/create",
+      data: {
+        projectTypeId: ProjectType.AVT,
+        title: data.title || "Untitled session",
+        slides: data.slides,
+      },
+    },
+  },
+});
+
+export const GENERATE_VIDEO_PROJECT_SERVER = "GENERATE_VIDEO_PROJECT_SERVER";
+
+export const generateVideoProjectServer = (projectId: number) => ({
+  type: GENERATE_VIDEO_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "GET",
+      url: `/project/generateVideo?projectId=${projectId}`,
+    },
+  },
+});
+
+export const updateAiHumanProjectServer = (data: updateAiHumanProjectServerProps) => ({
+  type: UPDATE_AI_HUMAN_PROJECT_SERVER,
+  payload: {
+    request: {
+      method: "POST",
+      url: "/project/update",
+      data: {
+        projectId: data.projectId,
+        projectTypeId: ProjectType.AVT,
+        title: data.title,
+        slides: data.slides,
       },
     },
   },

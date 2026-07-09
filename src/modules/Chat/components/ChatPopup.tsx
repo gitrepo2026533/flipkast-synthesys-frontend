@@ -62,7 +62,7 @@ const ChatPopup = () => {
               <AvatarCircle image="/images/SynthesysAssistant.svg" width={36} height={36} />
             </AssistantAvatarWrapper>
             <ChatNameWrapper>
-              <ChatName>Synthesys AI Writer</ChatName>
+              <ChatName>AI Photon AI Writer</ChatName>
               <ChatDescription>Your writing partner in crime</ChatDescription>
             </ChatNameWrapper>
           </ChatInfoWrapper>
@@ -78,7 +78,7 @@ const ChatPopup = () => {
           <Message
             showActions={false}
             sender={MessageSender.bot}
-            text="Hi there, I’m Synthesys AI Writer. I am here to help you."
+            text="Hi there, I’m AI Photon AI Writer. I am here to help you."
           />
           {messagesHistory.map((item, index) => (
             <Message

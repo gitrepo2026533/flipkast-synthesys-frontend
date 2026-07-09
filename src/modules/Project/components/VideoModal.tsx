@@ -26,7 +26,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ isOpen, onClose, videoPath }) =
       <Content onClick={(e) => e.stopPropagation()}>
         <CloseButton onClick={onClose}>&times;</CloseButton>
         <Video ref={videoRef} controls autoPlay onEnded={handleEnded}>
-          <source src={`http://192.168.1.80:7132/${videoPath}`} type="video/mp4" />
+          <source src={`${process.env.REACT_APP_MEDIA_BASE_URL}/${videoPath}`} type="video/mp4" />
           Your browser does not support HTML5 video.
         </Video>
       </Content>

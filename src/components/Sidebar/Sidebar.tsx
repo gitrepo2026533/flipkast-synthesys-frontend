@@ -52,30 +52,30 @@ const Sidebar = ({ mobile }: Props) => {
 
   const navigationList = [
     { id: 1, title: "Home", icon: <HomeIcon />, link: pages.main() },
-    { id: 2, title: "My plan", icon: <PlanIcon />, link: "#", disabled: true },
-    { id: 3, title: "My studio", icon: <StudioIcon />, link: pages.myStudio() },
-    { id: 4, title: "Voice Cloning", icon: <SharedIcon />, link: "#", hidden: voiceCloneAllowed === 0 },
-    { id: 5, title: "Support", icon: <SupportIcon />, link: "#" },
-    { id: 6, title: "Training", icon: <SupportIcon />, link: "#" },
-    {
-      id: 7,
-      title: "Voice API",
-      icon: <ChatAPIIcon />,
-      link: "#",
-      options: [{ id: "API Access", title: "API Access", link: pages.apiAccess() }],
-    },
-    {
-      id: 8,
-      title: "AI Video Generation",
-      icon: <AIVideoGenerationIcon />,
-      link: "/ai-video",
-    },
-    {
-      id: 9,
-      title: "AI Avatar Generation",
-      icon: <AIAvatarGenerationIcon />,
-      link: "/ai-avatar",
-    },
+    // { id: 2, title: "My plan", icon: <PlanIcon />, link: "#", disabled: true },
+    // { id: 3, title: "My studio", icon: <StudioIcon />, link: pages.myStudio() },
+    // { id: 4, title: "Voice Cloning", icon: <SharedIcon />, link: "#", hidden: voiceCloneAllowed === 0 },
+    // { id: 5, title: "Support", icon: <SupportIcon />, link: "#" },
+    // { id: 6, title: "Training", icon: <SupportIcon />, link: "#" },
+    // {
+    //   id: 7,
+    //   title: "Voice API",
+    //   icon: <ChatAPIIcon />,
+    //   link: "#",
+    //   options: [{ id: "API Access", title: "API Access", link: pages.apiAccess() }],
+    // },
+    // {
+    //   id: 8,
+    //   title: "AI Video Generation",
+    //   icon: <AIVideoGenerationIcon />,
+    //   link: "/ai-video",
+    // },
+    // {
+    //   id: 9,
+    //   title: "AI Avatar Generation",
+    //   icon: <AIAvatarGenerationIcon />,
+    //   link: "/ai-avatar",
+    // },
     { id: 10, title: "Settings", icon: <SettingsIcon />, link: pages.settings() },
     { id: 11, title: "Logout", icon: <LogoutIcon />, link: "" },
   ];
@@ -97,7 +97,7 @@ const Sidebar = ({ mobile }: Props) => {
   return (
     <Wrapper mobile={mobile}>
       <Content>
-        {navigationList.map(({ id, title, icon, link, disabled, hidden, options }) =>
+        {navigationList.map(({ id, title, icon, link, disabled, hidden, options }: any) =>
           hidden ? (
             <></>
           ) : title !== "Voice API" ? (
@@ -133,7 +133,7 @@ const Sidebar = ({ mobile }: Props) => {
                     </ListItemIcon>
                   </ListItemButton>
                   {open &&
-                    options?.map(({ id, title, link }) => (
+                    options?.map(({ id, title, link }: any) => (
                       <Link key={`${title} - ${id}`} to={link ? link : "/"}>
                         <ListItemButton
                           active={link === activePage}

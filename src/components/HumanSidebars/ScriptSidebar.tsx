@@ -11,6 +11,10 @@ const ScriptSidebar = ({
 }) => {
   const [script, setScript] = useState(currentScript || "");
 
+  React.useEffect(() => {
+    setScript(currentScript || "");
+  }, [currentScript]);
+
   const onScriptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (e.target.value.length <= 1500) {
       setScript(e.target.value);

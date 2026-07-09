@@ -55,8 +55,8 @@ const DragResizeWrapper = ({
     size={size}
     position={position}
     bounds="parent"
-    enableResizing={activeObjectId === id && editableTextId !== id}
-    disableDragging={editableTextId === id}
+    enableResizing={activeObjectId === id && editableTextId !== id && objType !== ObjectTypes.avatars}
+    disableDragging={editableTextId === id || objType === ObjectTypes.avatars}
     style={{ zIndex: index }}
     lockAspectRatio={lockRatio}
     maxWidth="100%"
