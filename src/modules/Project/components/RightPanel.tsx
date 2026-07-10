@@ -38,9 +38,10 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | number | null>(null);
   const [activeSlideInfo, setActiveSlideInfo] = useState<ActiveSlideInfo | null>(null);
+  const [thumbnailSrc, setThumbnailSrc] = useState<string>("");
 
   const videoSrc = slideData?.audioPath;
-  const thumbnailSrc = slideData?.backgroundAsset?.path ?? "https://picsum.photos/800/600";
+  // const thumbnailSrc = slideData?.backgroundAsset?.path ?? "https://picsum.photos/800/600";
   const totalSeconds =
     slides?.reduce((acc: number, slide: any) => acc + (slide.duration || 0), 0) || 0;
 
@@ -90,6 +91,8 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
     if (slide.slideId === 0) {
       dispatch(setActiveDraftSlide(slide));
       setSlideData(slide);
+      const thumbnailSrc = slide?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${slide.thumbnailImage}` : "/images/mock.png";
+      setThumbnailSrc(thumbnailSrc);
       setCurrentSlideId(0);
       return;
     }
@@ -108,10 +111,13 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
       backgroundAsset: { path: "" },
       totalDuration: 0,
       projectParagraphs: [],
+      thumbnailImage: ""
     };
     setSlides((prev: any) => [...prev, newSlide]);
     setCurrentSlideId(0);
     setSlideData(newSlide);
+    const thumbnailSrc = newSlide?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${newSlide.thumbnailImage}` : "/images/mock.png";
+    setThumbnailSrc(thumbnailSrc);
     dispatch(setActiveDraftSlide(newSlide));
   };
 
@@ -163,9 +169,13 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
 
     if (activeSlide) {
       setSlideData(activeSlide);
+      const thumbnailSrc = activeSlide?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${activeSlide.thumbnailImage}` : "/images/mock.png";
+      setThumbnailSrc(thumbnailSrc);
       if (!currentSlideId) setCurrentSlideId(activeSlide.slideId);
     } else {
       setSlideData(projectData.slides?.[0] || {});
+        const thumbnailSrc = projectData.slides?.[0]?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${projectData.slides?.[0]?.thumbnailImage}` : "/images/mock.png";
+        setThumbnailSrc(thumbnailSrc);
       setCurrentSlideId(projectData.slides?.[0]?.slideId || null);
     }
   }, [projectData, currentSlideId]);

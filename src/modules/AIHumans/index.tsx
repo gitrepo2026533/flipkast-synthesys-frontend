@@ -23,7 +23,7 @@ import {
   resetCreatedProject,
   generateVideoProjectServer,
 } from "../../redux/actions/projectAction";
-import { getProject, getCreatedProject } from "../../redux/reducers/projectReducer";
+import { getProject, getCreatedProject, getProjectLoading } from "../../redux/reducers/projectReducer";
 import { getUserAssets } from "../../redux/reducers/profileReducer";
 import { pages } from "../../lib/routeUtils";
 import { IActor } from "../../types/actor";
@@ -38,6 +38,7 @@ import Sidebar from "./components/Sidebar";
 import SoundFeaturesSettingsCard from "./components/SoundFeaturesSettingsCard";
 import Timeline from "./components/Timeline";
 import { CheckIcon } from "../../components/Icons/CheckIcon";
+import CircularProgress from "../../components/Icons/CircularProgress";
 
 const screens = [
   { id: 1, icon: <DesktopIcon /> },
@@ -75,6 +76,7 @@ const AIHumansPage = () => {
   const actorsList = useSelector(getActorsList);
   const projectData = useSelector(getProject);
   const createdProject = useSelector(getCreatedProject);
+  const isLoading = useSelector(getProjectLoading);
   const userAssets = useSelector(getUserAssets);
   const userAssetsLoading = useSelector((state: StoreType) => state.profile[ProfileModules.userAssets]?.isLoading);
   const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
@@ -485,6 +487,13 @@ const AIHumansPage = () => {
       setInitialSceneAdded(true);
     }
   }, [scenes.length, projectId, hasFetchedAssets, userAssetsLoading, initialSceneAdded, userAssets, addScene]);
+  if (isLoading) {
+    return (
+      <LoaderWrapper>
+        <CircularProgress />
+      </LoaderWrapper>
+    );
+  }
 
   return (
     <Wrapper>
@@ -883,6 +892,14 @@ const StatusBadge = styled.div<{ status?: string }>`
         return "rgba(140,140,140,0.2)";
     }
   }};
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
 `;
 
 export default AIHumansPage;
