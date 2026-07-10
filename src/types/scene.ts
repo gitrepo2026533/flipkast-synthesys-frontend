@@ -67,6 +67,7 @@ export interface Scene {
   background: string | BackgroundColor;
   objects: SceneObject[];
   script: string;
+  thumbnailImage?: string;
 }
 
 export enum ObjectTypes {

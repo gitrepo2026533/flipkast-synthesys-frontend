@@ -10,6 +10,8 @@ export const initialValuesSettings = {
   [SettingsInputFields.name]: "",
   [SettingsInputFields.email]: "",
   [SettingsInputFields.number]: "",
+  [SettingsInputFields.aiVideoApiKey]: "",
+  [SettingsInputFields.aiAvatarApiKey]: "",
 } as SettingsInputValues;
 
 export const getSettingsFields = [
@@ -38,6 +40,25 @@ export const getSettingsFields = [
     caption: "Phone number",
     label: "Contact",
     placeholder: "Enter your phone number",
+  },
+];
+
+export const getApiKeysFields = [
+  {
+    type: "password",
+    id: SettingsInputFields.aiVideoApiKey,
+    name: SettingsInputFields.aiVideoApiKey,
+    caption: "AI Video API Key",
+    label: "AI Video API Key",
+    placeholder: "Enter your AI Video API key",
+  },
+  {
+    type: "password",
+    id: SettingsInputFields.aiAvatarApiKey,
+    name: SettingsInputFields.aiAvatarApiKey,
+    caption: "AI Avatar API Key",
+    label: "AI Avatar API Key",
+    placeholder: "Enter your AI Avatar API key",
   },
 ];
 

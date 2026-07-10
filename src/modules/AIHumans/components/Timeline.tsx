@@ -89,7 +89,11 @@ const Timeline = ({
           <ScenesItem
             className={`orientation-${orientation}`}
             isActive={activeSceneId === scene.id}
-            src={"/images/mock.png"}
+            src={
+              scene?.thumbnailImage
+                ? `${process.env.REACT_APP_API_BASE_URL}${scene.thumbnailImage}`
+                : "/images/mock.png"
+            }
             key={scene.id}
             onClick={() => handleChangeActiveScene(scene.id)}
           >

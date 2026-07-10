@@ -21,6 +21,8 @@ export interface User {
   voiceCloneUsed?: number;
   apiKey?: string;
   isAPIKey: boolean;
+  aiVideoApiKey?: string;
+  aiAvatarApiKey?: string;
 }
 
 export enum ProfileModules {
