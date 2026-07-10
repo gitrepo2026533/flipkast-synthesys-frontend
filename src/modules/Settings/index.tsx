@@ -6,7 +6,12 @@ import Select from "../../components/Select/Select";
 import { settingOptionsList } from "../../mocks/settingOptionsList";
 import FormikField from "../../components/FormInput/FormikField";
 import { useFormik } from "formik";
-import { getChangePasswordFields, getSettingsFields, initialValuesSettings } from "../../forms/settings/settings";
+import {
+  getChangePasswordFields,
+  getSettingsFields,
+  initialValuesSettings,
+  getApiKeysFields,
+} from "../../forms/settings/settings";
 import { settingsSchema } from "../../forms/settings/validation";
 import Button from "../../components/Button/Button";
 import CloseIcon from "../../components/Icons/CloseIcon";
@@ -38,6 +43,14 @@ const Settings = () => {
   const [errorSizeImage, setErrorSizeImage] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [checkBox, setCheckBox] = useState<boolean>(false);
+  const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({
+    aiVideoApiKey: false,
+    aiAvatarApiKey: false,
+  });
+
+  const handleShowApiKey = (value: boolean, type: string) => {
+    setShowApiKey({ ...showApiKey, [type]: value });
+  };
 
   useEffect(() => {
     dispatch(getMyProfileServer());
@@ -47,9 +60,20 @@ const Settings = () => {
     if (!profile.name) return;
     setSelectedValue({ country: profile.country, languages: profile.language, timeZone: profile.timePreference });
     if (!selectedImage) {
-      setSelectedImage(profile.profilePic);
+      const picUrl = profile.profilePic
+        ? profile.profilePic.startsWith("http")
+          ? profile.profilePic
+          : `${process.env.REACT_APP_API_BASE_URL}${profile.profilePic}`
+        : null;
+      setSelectedImage(picUrl);
     }
-    setValues({ name: profile.name, email: profile.email, number: profile.contactNo.replace(/\s/g, "") });
+    setValues({
+      name: profile.name,
+      email: profile.email,
+      number: profile.contactNo.replace(/\s/g, ""),
+      aiVideoApiKey: profile.aiVideoApiKey || "",
+      aiAvatarApiKey: profile.aiAvatarApiKey || "",
+    });
     setCheckBox(profile.receiveUpdates);
   }, [profile]);
 
@@ -63,6 +87,8 @@ const Settings = () => {
         language: selectedValue.languages,
         timePreference: selectedValue.timeZone,
         receiveUpdates: checkBox,
+        aiAvatarApiKey: values.aiAvatarApiKey,
+        aiVideoApiKey: values.aiVideoApiKey,
       }),
     );
   };
@@ -216,12 +242,30 @@ const Settings = () => {
                 />
               ))}
             </SettingsContentWrapper>
+            <SettingsSubTitles>API Keys</SettingsSubTitles>
+            <ApiKeysWrapper>
+              {getApiKeysFields.map((field) => (
+                <FormikField
+                  flexRow="31"
+                  handleBlur={handleBlur}
+                  key={field.id}
+                  errors={errors}
+                  touched={touched}
+                  field={field}
+                  handleChange={handleChange}
+                  values={values}
+                  isVisible={showApiKey[field.name]}
+                  setIsVisible={handleShowApiKey}
+                />
+              ))}
+              <div style={{ width: "31%" }} />
+            </ApiKeysWrapper>
             <SettingsButtonsSection>
               <Button text="Cancel" onClick={cancelChanges} />
               <Button text="Save" type="submit" />
             </SettingsButtonsSection>
           </SettingsForm>
-          <ChangePasswordForm />
+          {/* <ChangePasswordForm /> */}
         </SettingsWrapper>
       </SidebarLayout>
     </Wrapper>
@@ -390,13 +434,19 @@ const SettingContentItem = styled("div")`
   }
 `;
 
+const ApiKeysWrapper = styled(SettingsContentWrapper)`
+  div > span:last-of-type {
+    top: 33px;
+  }
+`;
+
 const SettingsButtonsSection = styled("div")`
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: absolute;
-  bottom: 30px;
+  margin-top: 30px;
+  margin-bottom: 30px;
   background: ${({ theme }: any) => theme.primaryBackground};
   z-index: 5;
   button {

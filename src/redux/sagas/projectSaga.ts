@@ -72,7 +72,11 @@ function* handleGetProjectFail() {
   yield put(updateProjectLoading({ module: ProjectModules.project, isLoading: false }));
 }
 
-function* handleGetProjectSuccess() {
+function* handleGetProjectSuccess(action: any) {
+  const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
+  if (didApikeyError) {
+    yield toast.error(didApikeyError);
+  }
   yield put(updateProjectLoading({ module: ProjectModules.project, isLoading: false }));
 }
 
@@ -140,7 +144,11 @@ function* handleDeleteProjectSlideFail(action: any) {
 //   try {
 //     const projectId = action.payload.data.data.projectId;
 
-function* handleGetVideoByIdSuccess() {
+function* handleGetVideoByIdSuccess(action: any) {
+  const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
+  if (didApikeyError) {
+    yield toast.error(didApikeyError);
+  }
   yield put(
     updateProjectLoading({
       module: ProjectModules.project,

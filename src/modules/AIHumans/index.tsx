@@ -245,6 +245,7 @@ const AIHumansPage = () => {
             objects: objects,
             script: text,
             projectParagraphId: slide.projectParagraphs?.[0]?.projectParagraphId,
+            thumbnailImage: slide.thumbnailImage,
           };
         });
         setScenesExternal((prevScenes: any[]) => {
@@ -398,6 +399,7 @@ const AIHumansPage = () => {
     });
 
     let targetProjectId = projectId;
+    let didApikeyError = null;
 
     if (projectId) {
       const response: any = await dispatch(
@@ -412,7 +414,12 @@ const AIHumansPage = () => {
         toast.error("Failed to update project");
         return;
       }
-      toast.success("Project updated successfully");
+      didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
+      if (didApikeyError) {
+        toast.error(didApikeyError);
+      } else {
+        toast.success("Project updated successfully");
+      }
     } else {
       const response: any = await dispatch(
         createAiHumanProjectServer({
@@ -425,11 +432,16 @@ const AIHumansPage = () => {
         toast.error("Failed to create project");
         return;
       }
-      toast.success("Project created successfully");
+      didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
+      if (didApikeyError) {
+        toast.error(didApikeyError);
+      } else {
+        toast.success("Project created successfully");
+      }
       targetProjectId = response?.payload?.data?.data?.projectId;
     }
 
-    if (targetProjectId) {
+    if (targetProjectId && !didApikeyError) {
       setGenerationStatus("in progress");
       try {
         const response: any = await dispatch(generateVideoProjectServer(Number(targetProjectId)));

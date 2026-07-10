@@ -171,9 +171,8 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
   }, [projectData, currentSlideId]);
 
   useEffect(() => {
-    if (projectSlides) setSlides(projectSlides);
-
-  }, [projectSlides]);
+    if (projectData?.slides) setSlides(projectData.slides);
+  }, [projectData?.slides]);
 
   useEffect(() => {
     if (currentSlideId === null || currentSlideId === undefined || currentSlideId === 0) return;
@@ -185,7 +184,7 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
     if (!videoRef.current) return;
     videoRef.current.load();
     setIsPlaying(false);
-  }, [slideData?.slideId]);
+  }, [slideData?.slideId, videoSrc]);
 
   return (
     <Wrapper>
@@ -240,7 +239,7 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
         <SlidesTrack>
           {slides?.map((slide: any, idx: number) => {
             const isActive = slideData?.slideId === slide.slideId;
-            const thumb = slide?.backgroundAsset?.path ?? "/images/mock.png";
+            const thumb = slide?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${slide.thumbnailImage}` : "/images/mock.png";
             return (
               <SlideFlowWrapper key={slide.slideId}>
                 <SlideItem $active={isActive} onClick={() => handleSlideChange(slide.slideId)}>

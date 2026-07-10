@@ -32,6 +32,8 @@ interface UpdateProfileServerProps {
   contactNo?: string;
   receiveUpdates?: boolean;
   profilePic?: string;
+  aiVideoApiKey?: string;
+  aiAvatarApiKey?: string;
 }
 
 export const getMyProfileServer = (checkCloneVoice?: boolean) => ({
