@@ -7,7 +7,7 @@ import { MoreIcon } from "../../../components/Icons/MoreIcon";
 import { PlayIcon } from "../../../components/Icons/PlayIcon";
 import PopupModel from "../../../components/PopupModel/PopupModel";
 import { clearActiveDraftSlide, deleteProjectSlideServer, getProjectSlideServer, setActiveDraftSlide, updateSlideStatusServer } from "../../../redux/actions/projectAction";
-import { getProject, getSlidesData } from "../../../redux/reducers/projectReducer";
+import { getProject, getSlidesData, getIsDraftSlide, getDraftSlideData } from "../../../redux/reducers/projectReducer";
 
 const formatTime = (s: number) => {
   if (isNaN(s)) return "0:00";
@@ -35,6 +35,8 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
   const projectSlides = useSelector(getSlidesData);
   const [slides, setSlides] = useState<any>([]);
   const [slideData, setSlideData] = useState<any>({});
+  const isDraftSlide = useSelector(getIsDraftSlide);
+  const draftSlideData = useSelector(getDraftSlideData);
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const [deleteSlideId, setDeleteSlideId] = useState<string | number | null>(null);
   const [activeSlideInfo, setActiveSlideInfo] = useState<ActiveSlideInfo | null>(null);
@@ -164,6 +166,13 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
   useEffect(() => {
     if (!projectData) return;
 
+    if (isDraftSlide && draftSlideData?.slideId === 0 && currentSlideId === 0) {
+      setSlideData(draftSlideData);
+      const thumbnailSrc = draftSlideData?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${draftSlideData.thumbnailImage}` : "/images/mock.png";
+      setThumbnailSrc(thumbnailSrc);
+      return;
+    }
+
     const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
     const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
 
@@ -178,11 +187,20 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
         setThumbnailSrc(thumbnailSrc);
       setCurrentSlideId(projectData.slides?.[0]?.slideId || null);
     }
-  }, [projectData, currentSlideId]);
+  }, [projectData, currentSlideId, isDraftSlide, draftSlideData]);
 
   useEffect(() => {
-    if (projectData?.slides) setSlides(projectData.slides);
-  }, [projectData?.slides]);
+    if (projectData?.slides) {
+      if (isDraftSlide && draftSlideData?.slideId === 0) {
+        const slideExists = projectData.slides.some((s: any) => s.slideId === 0);
+        if (!slideExists) {
+          setSlides([...projectData.slides, draftSlideData]);
+          return;
+        }
+      }
+      setSlides(projectData.slides);
+    }
+  }, [projectData?.slides, isDraftSlide, draftSlideData]);
 
   useEffect(() => {
     if (currentSlideId === null || currentSlideId === undefined || currentSlideId === 0) return;
