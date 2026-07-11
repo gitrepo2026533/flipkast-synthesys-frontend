@@ -255,6 +255,11 @@ const AIHumansPage = () => {
         setScenesExternal((prevScenes: any[]) => {
           if (prevScenes.length === 0) return mappedScenes;
 
+          const hasCommonId = prevScenes.some((p) => mappedScenes.some((m) => m.id === p.id));
+          if (!hasCommonId) {
+            return mappedScenes;
+          }
+
           const newScenes = [...prevScenes];
           mappedScenes.forEach((mapped) => {
             const index = newScenes.findIndex((p) => p.id === mapped.id);
@@ -522,14 +527,14 @@ const AIHumansPage = () => {
   if (isLoading) {
     return (
       <LoaderWrapper>
-        <CircularProgress color="#fff" />
+        <CircularProgress />
       </LoaderWrapper>
     );
   }
 
   return (
     <Wrapper>
-      {(isSavingDraft || isGenerating) && (
+      {(isSavingDraft || isGenerating || isLoading) && (
         <FullPageLoader>
           <CircularProgress color="#fff" />
         </FullPageLoader>
@@ -594,7 +599,7 @@ const AIHumansPage = () => {
                 disabled={
                   // Number(projectData?.status) === 2 ||
                   // Number(projectData?.status) === 3 ||
-                  isSavingDraft || isGenerating || generationStatus === "pending" || generationStatus === "in progress"
+                  generationStatus === "in progress"
                 }
                 buttonTheme={ButtonThemes.Outline}
                 style={{
@@ -940,8 +945,13 @@ const LoaderWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
 `;
 
 const FullPageLoader = styled.div`
