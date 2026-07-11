@@ -69,6 +69,7 @@ interface createAvatarProjectServerProps {
 
 interface createAiHumanProjectServerProps {
   title?: string;
+  Status?: number;
   slides: {
     SlideId?: number;
     backGroundAssetId?: number | string;
@@ -331,6 +332,7 @@ export const createAiHumanProjectServer = (data: createAiHumanProjectServerProps
       data: {
         projectTypeId: ProjectType.AVT,
         title: data.title || "Untitled session",
+        Status: data.Status,
         slides: data.slides,
       },
     },
@@ -359,6 +361,7 @@ export const updateAiHumanProjectServer = (data: updateAiHumanProjectServerProps
         projectId: data.projectId,
         projectTypeId: ProjectType.AVT,
         title: data.title,
+        Status: data.Status,
         slides: data.slides,
       },
     },

@@ -25,7 +25,7 @@ interface Props {
 
 const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Props) => {
   const profile = useSelector(getProfile);
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState(profile.profilePic);
   const { pathname } = useLocation();
 
   const handleLoadingError = () => {
@@ -34,7 +34,7 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
 
   useEffect(() => {
     setSource(profile.profilePic);
-  }, [profile.profilePic]);
+  }, [profile.profilePic, profile]);
 
   const totalSeconds = profile.aiVoicesAllowed;
   const usedSeconds = profile.aiVoicesUsed;
@@ -90,7 +90,17 @@ const Navigation = ({ children, startAdornment, withThemeSwitcher = true }: Prop
               className="notificate"
             /> */}
             <Link to="/settings">
-              <ImageWrapper>{source ? <img src={source} alt="" onError={handleLoadingError} /> : <div />}</ImageWrapper>
+              <ImageWrapper>
+                {source ? (
+                  <img
+                    src={source ? `${process.env.REACT_APP_API_BASE_URL}${source}` : "/images/placeholder.png"}
+                    alt=""
+                    onError={handleLoadingError}
+                  />
+                ) : (
+                  <div />
+                )}
+              </ImageWrapper>
             </Link>
           </Actions>
         )}

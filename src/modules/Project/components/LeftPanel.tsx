@@ -17,7 +17,8 @@ import { sidebar } from "../../../mocks/humans";
 import { getProjectSlideServer, lockVideoProjectServer, ProjectType, updateVideoProjectServer } from "../../../redux/actions/projectAction";
 import { getDraftSlideData, getIsDraftSlide, getProject } from "../../../redux/reducers/projectReducer";
 import { IHuman, ProfileHumanSidebarType } from "../../../types/human";
-import { chips, models } from "../data";
+import { chips } from "../data";
+import { models } from "../../AIVideo/data";
 import { getActorsList } from "../../../redux/reducers/actorReducer";
 import { getActorsServer } from "../../../redux/actions/actorActions";
 import { getFullImageUrl } from "../../../lib/getFullImageUrl";
@@ -179,7 +180,10 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
     if (isDraftSlide && draftSlideData?.slideId === 0) {
       setSlideData(draftSlideData);
     } else {
-      const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+      const targetId =
+        currentSlideId === 0
+          ? projectData.slides?.[projectData.slides.length - 1]?.slideId || 0
+          : currentSlideId || projectData.slides?.[0]?.slideId;
       const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
       
       if (activeSlide) {
@@ -286,7 +290,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                           </Timestamp>
                         </MessageBubble>
                       </MessageRow>
-                    ) : (
+                    ) : para.errorMessage ? (
                       <ErrorContainer>
                         <ErrorTitle>
                           ⚠️ AI Generation Failed
@@ -295,7 +299,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                         <ErrorMessage> {para?.errorMessage}
                         </ErrorMessage>
                       </ErrorContainer>
-                    )}
+                    ) : null}
                   </ConversationPair>
                 ))
               )}

@@ -73,10 +73,10 @@ function* handleGetProjectFail() {
 }
 
 function* handleGetProjectSuccess(action: any) {
-  const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
-  if (didApikeyError) {
-    yield toast.error(didApikeyError);
-  }
+  // const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
+  // if (didApikeyError) {
+  //   yield toast.error(didApikeyError);
+  // }
   yield put(updateProjectLoading({ module: ProjectModules.project, isLoading: false }));
 }
 
@@ -145,10 +145,11 @@ function* handleDeleteProjectSlideFail(action: any) {
 //     const projectId = action.payload.data.data.projectId;
 
 function* handleGetVideoByIdSuccess(action: any) {
-  const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
-  if (didApikeyError) {
-    yield toast.error(didApikeyError);
-  }
+  // Removed API Key error toaster
+  // const didApikeyError = action?.payload?.data?.data?.didApikeyError || action?.payload?.data?.didApikeyError;
+  // if (didApikeyError) {
+  //   yield toast.error(didApikeyError);
+  // }
   yield put(
     updateProjectLoading({
       module: ProjectModules.project,

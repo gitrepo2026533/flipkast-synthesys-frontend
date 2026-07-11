@@ -109,7 +109,7 @@ const Timeline = ({
             <SceneButtonWrapper
               className={`orientation-${orientation} ${index === scenes.length - 1 ? "is-last" : ""}`}
             >
-              {index === scenes.length - 1 ? (
+              {/* {index === scenes.length - 1 ? (
                 <IconButton onClick={handleAddScene} icon={<PlusIcon />} />
               ) : (
                 <IconButton
@@ -117,7 +117,8 @@ const Timeline = ({
                   iconButtonTheme={IconButtonThemes.Secondary}
                   icon={<AnimatedTransitionIcon />}
                 />
-              )}
+              )} */}
+              {index === scenes.length - 1 ? <IconButton onClick={handleAddScene} icon={<PlusIcon />} /> : <></>}
             </SceneButtonWrapper>
           </ScenesItem>
         ))}

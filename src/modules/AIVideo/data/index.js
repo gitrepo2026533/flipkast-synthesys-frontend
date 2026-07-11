@@ -1,4 +1,5 @@
-export const models = ["GPT-4o", "GPT-4.1", "Claude 3", "Gemini Pro"];
+// export const models = ["GPT-4o", "GPT-4.1", "Claude 3", "Gemini Pro"];
+export const models = ["LTX-2.3"];
 
 export const mockProjects = [
   {

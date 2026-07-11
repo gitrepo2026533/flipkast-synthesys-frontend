@@ -22,6 +22,7 @@ export const getSettingsFields = [
     caption: "User name",
     label: "User name",
     placeholder: "Enter your name",
+    autoComplete: "off",
   },
   {
     type: "email",
@@ -51,6 +52,7 @@ export const getApiKeysFields = [
     caption: "AI Video API Key",
     label: "AI Video API Key",
     placeholder: "Enter your AI Video API key",
+    autoComplete: "new-password",
   },
   {
     type: "password",
@@ -59,6 +61,7 @@ export const getApiKeysFields = [
     caption: "AI Avatar API Key",
     label: "AI Avatar API Key",
     placeholder: "Enter your AI Avatar API key",
+    autoComplete: "new-password",
   },
 ];
 

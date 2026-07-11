@@ -23,7 +23,7 @@ import {
   resetCreatedProject,
   generateVideoProjectServer,
 } from "../../redux/actions/projectAction";
-import { getProject, getCreatedProject } from "../../redux/reducers/projectReducer";
+import { getProject, getCreatedProject, getProjectLoading } from "../../redux/reducers/projectReducer";
 import { getUserAssets } from "../../redux/reducers/profileReducer";
 import { pages } from "../../lib/routeUtils";
 import { IActor } from "../../types/actor";
@@ -38,6 +38,7 @@ import Sidebar from "./components/Sidebar";
 import SoundFeaturesSettingsCard from "./components/SoundFeaturesSettingsCard";
 import Timeline from "./components/Timeline";
 import { CheckIcon } from "../../components/Icons/CheckIcon";
+import CircularProgress from "../../components/Icons/CircularProgress";
 
 const screens = [
   { id: 1, icon: <DesktopIcon /> },
@@ -75,6 +76,7 @@ const AIHumansPage = () => {
   const actorsList = useSelector(getActorsList);
   const projectData = useSelector(getProject);
   const createdProject = useSelector(getCreatedProject);
+  const isLoading = useSelector(getProjectLoading);
   const userAssets = useSelector(getUserAssets);
   const userAssetsLoading = useSelector((state: StoreType) => state.profile[ProfileModules.userAssets]?.isLoading);
   const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
@@ -87,6 +89,8 @@ const AIHumansPage = () => {
     "idle",
   );
   const [title, setTitle] = useState("");
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [paragraphs, setParagraphs] = useState<Paragraphs[]>(initialParagraphsData);
   const [paragraphActive, setParagraphActive] = useState<number>();
@@ -251,6 +255,11 @@ const AIHumansPage = () => {
         setScenesExternal((prevScenes: any[]) => {
           if (prevScenes.length === 0) return mappedScenes;
 
+          const hasCommonId = prevScenes.some((p) => mappedScenes.some((m) => m.id === p.id));
+          if (!hasCommonId) {
+            return mappedScenes;
+          }
+
           const newScenes = [...prevScenes];
           mappedScenes.forEach((mapped) => {
             const index = newScenes.findIndex((p) => p.id === mapped.id);
@@ -296,64 +305,79 @@ const AIHumansPage = () => {
       return;
     }
 
-    const payloadSlides = scenes.map((scene: any) => {
-      let bgId: string | number | undefined = undefined;
+    setIsSavingDraft(true);
+    try {
+      const payloadSlides = scenes.map((scene: any) => {
+        let bgId: string | number | undefined = undefined;
 
-      const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
-      if (userAssetMatch) {
-        bgId = userAssetMatch.userAssetID;
-      } else {
-        const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
-        mockBgData.forEach((category: any) => {
-          if (category.data) {
-            const match = category.data.find((b: any) => b.image === scene.background || b.video === scene.background);
-            if (match) bgId = match.id;
-          }
-        });
-      }
+        const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
+        if (userAssetMatch) {
+          bgId = userAssetMatch.userAssetID;
+        } else {
+          const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+          mockBgData.forEach((category: any) => {
+            if (category.data) {
+              const match = category.data.find(
+                (b: any) => b.image === scene.background || b.video === scene.background,
+              );
+              if (match) bgId = match.id;
+            }
+          });
+        }
 
-      const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
-      const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
+        const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
+        const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
 
-      return {
-        ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
-        backGroundAssetId: bgId,
-        aiHumanActorId: selectedActorId,
-        projectParagraphs: [
-          {
-            ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
-            actorId: selectedActorId || 12270,
-            Text: scene.script || "",
-          },
-        ],
-      };
-    });
+        return {
+          ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
+          backGroundAssetId: bgId,
+          aiHumanActorId: selectedActorId,
+          projectParagraphs: [
+            {
+              ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
+              actorId: selectedActorId || 12270,
+              Text: scene.script || "",
+            },
+          ],
+        };
+      });
 
-    if (projectId) {
-      const response: any = await dispatch(
-        updateAiHumanProjectServer({
-          projectId: Number(projectId),
-          title: title,
-          slides: payloadSlides,
-        }),
+      const numericStatus = Number(
+        Object.keys(ProjectStatus).find((key) => ProjectStatus[Number(key)] === generationStatus) ||
+          projectData?.status ||
+          1,
       );
-      if (response?.error) {
-        toast.error("Failed to save project as draft");
+
+      if (projectId) {
+        const response: any = await dispatch(
+          updateAiHumanProjectServer({
+            projectId: Number(projectId),
+            title: title,
+            Status: numericStatus,
+            slides: payloadSlides,
+          }),
+        );
+        if (response?.error) {
+          toast.error("Failed to save project as draft");
+        } else {
+          toast.success("Project saved as draft successfully");
+        }
       } else {
-        toast.success("Project saved as draft successfully");
+        const response: any = await dispatch(
+          createAiHumanProjectServer({
+            title: title,
+            Status: numericStatus,
+            slides: payloadSlides,
+          }),
+        );
+        if (response?.error) {
+          toast.error("Failed to save project as draft");
+        } else {
+          toast.success("Project saved as draft successfully");
+        }
       }
-    } else {
-      const response: any = await dispatch(
-        createAiHumanProjectServer({
-          title: title,
-          slides: payloadSlides,
-        }),
-      );
-      if (response?.error) {
-        toast.error("Failed to save project as draft");
-      } else {
-        toast.success("Project saved as draft successfully");
-      }
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -364,100 +388,115 @@ const AIHumansPage = () => {
     }
 
     setGenerationStatus("pending");
+    setIsGenerating(true);
 
-    const payloadSlides = scenes.map((scene: any) => {
-      let bgId: string | number | undefined = undefined;
+    try {
+      const payloadSlides = scenes.map((scene: any) => {
+        let bgId: string | number | undefined = undefined;
 
-      const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
-      if (userAssetMatch) {
-        bgId = userAssetMatch.userAssetID;
-      } else {
-        const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
-        mockBgData.forEach((category: any) => {
-          if (category.data) {
-            const match = category.data.find((b: any) => b.image === scene.background || b.video === scene.background);
-            if (match) bgId = match.id;
-          }
-        });
-      }
-
-      const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
-      const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
-
-      return {
-        ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
-        backGroundAssetId: bgId,
-        aiHumanActorId: selectedActorId,
-        projectParagraphs: [
-          {
-            ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
-            actorId: selectedActorId || 12270,
-            Text: scene.script || "",
-          },
-        ],
-      };
-    });
-
-    let targetProjectId = projectId;
-    let didApikeyError = null;
-
-    if (projectId) {
-      const response: any = await dispatch(
-        updateAiHumanProjectServer({
-          projectId: Number(projectId),
-          title: title,
-          slides: payloadSlides,
-        }),
-      );
-      if (response?.error) {
-        setGenerationStatus("failed");
-        toast.error("Failed to update project");
-        return;
-      }
-      didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
-      if (didApikeyError) {
-        toast.error(didApikeyError);
-      } else {
-        toast.success("Project updated successfully");
-      }
-    } else {
-      const response: any = await dispatch(
-        createAiHumanProjectServer({
-          title: title,
-          slides: payloadSlides,
-        }),
-      );
-      if (response?.error) {
-        setGenerationStatus("failed");
-        toast.error("Failed to create project");
-        return;
-      }
-      didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
-      if (didApikeyError) {
-        toast.error(didApikeyError);
-      } else {
-        toast.success("Project created successfully");
-      }
-      targetProjectId = response?.payload?.data?.data?.projectId;
-    }
-
-    if (targetProjectId && !didApikeyError) {
-      setGenerationStatus("in progress");
-      try {
-        const response: any = await dispatch(generateVideoProjectServer(Number(targetProjectId)));
-        const result = response?.payload?.data;
-        if (result?.succeeded && result?.data?.path) {
-          setGeneratedVideoPath(result.data.path);
-          setGenerationStatus("completed");
+        const userAssetMatch = userAssets?.find((a: any) => a.path === scene.background);
+        if (userAssetMatch) {
+          bgId = userAssetMatch.userAssetID;
         } else {
+          const mockBgData = sidebar.find((s) => s.type === ProfileHumanSidebarType.Background)?.data || [];
+          mockBgData.forEach((category: any) => {
+            if (category.data) {
+              const match = category.data.find(
+                (b: any) => b.image === scene.background || b.video === scene.background,
+              );
+              if (match) bgId = match.id;
+            }
+          });
+        }
+
+        const avatarObj = scene.objects?.find((o: any) => o.type === "avatars");
+        const selectedActorId = avatarObj ? avatarObj.object.id : undefined;
+
+        return {
+          ...(projectId ? { SlideId: scene.id > 1 ? scene.id : 0 } : {}),
+          backGroundAssetId: bgId,
+          aiHumanActorId: selectedActorId,
+          projectParagraphs: [
+            {
+              ...(scene.projectParagraphId ? { projectParagraphId: scene.projectParagraphId } : {}),
+              actorId: selectedActorId || 12270,
+              Text: scene.script || "",
+            },
+          ],
+        };
+      });
+
+      let targetProjectId = projectId;
+      let didApikeyError = null;
+
+      const numericStatus = Number(
+        Object.keys(ProjectStatus).find((key) => ProjectStatus[Number(key)] === generationStatus) ||
+          projectData?.status ||
+          1,
+      );
+
+      if (projectId) {
+        const response: any = await dispatch(
+          updateAiHumanProjectServer({
+            projectId: Number(projectId),
+            title: title,
+            Status: numericStatus,
+            slides: payloadSlides,
+          }),
+        );
+        if (response?.error) {
+          setGenerationStatus("failed");
+          toast.error("Failed to update project");
+          return;
+        }
+        didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
+        if (didApikeyError) {
+          toast.error(didApikeyError);
+        } else {
+          toast.success("Project updated successfully");
+        }
+      } else {
+        const response: any = await dispatch(
+          createAiHumanProjectServer({
+            title: title,
+            Status: numericStatus,
+            slides: payloadSlides,
+          }),
+        );
+        if (response?.error) {
+          setGenerationStatus("failed");
+          toast.error("Failed to create project");
+          return;
+        }
+        didApikeyError = response?.payload?.data?.data?.didApikeyError || response?.payload?.data?.didApikeyError;
+        if (didApikeyError) {
+          toast.error(didApikeyError);
+        } else {
+          toast.success("Project created successfully");
+        }
+        targetProjectId = response?.payload?.data?.data?.projectId;
+      }
+
+      if (targetProjectId && !didApikeyError) {
+        setGenerationStatus("in progress");
+        try {
+          const response: any = await dispatch(generateVideoProjectServer(Number(targetProjectId)));
+          const result = response?.payload?.data;
+          if (result?.succeeded && result?.data?.path) {
+            setGeneratedVideoPath(result.data.path);
+            setGenerationStatus("completed");
+          } else {
+            setGenerationStatus("failed");
+          }
+        } catch (error) {
+          console.error("Error generating video", error);
           setGenerationStatus("failed");
         }
-      } catch (error) {
-        console.error("Error generating video", error);
+      } else {
         setGenerationStatus("failed");
       }
-    } else {
-      setGenerationStatus("failed");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -485,9 +524,21 @@ const AIHumansPage = () => {
       setInitialSceneAdded(true);
     }
   }, [scenes.length, projectId, hasFetchedAssets, userAssetsLoading, initialSceneAdded, userAssets, addScene]);
+  if (isLoading) {
+    return (
+      <LoaderWrapper>
+        <CircularProgress />
+      </LoaderWrapper>
+    );
+  }
 
   return (
     <Wrapper>
+      {(isSavingDraft || isGenerating || isLoading) && (
+        <FullPageLoader>
+          <CircularProgress color="#fff" />
+        </FullPageLoader>
+      )}
       <ProfileHumanSidebar activeSidebarItem={activeSidebarItem} setActiveSidebarItem={setActiveSidebarItem} />
       <PageWrapper id="pagewrapperid">
         <DashboardLayout
@@ -534,16 +585,21 @@ const AIHumansPage = () => {
                   !(generatedVideoPath || (projectData?.output && projectData?.projectId === Number(projectId)))
                 }
               />
-              <Button buttonTheme={ButtonThemes.Transparent} text="Save as draft" onClick={handleCreateVideo} />
+              <Button
+                buttonTheme={ButtonThemes.Transparent}
+                text={isSavingDraft ? <CircularProgress color="#fff" /> : "Save as draft"}
+                onClick={handleCreateVideo}
+                disabled={isSavingDraft || isGenerating}
+              />
               {/* <Button text="Generate" onClick={handleCreateVideo} /> */}
               <Button
-                text="Generate"
-                icon={<CheckIcon />}
+                text={isGenerating ? <CircularProgress color="#fff" /> : "Generate"}
+                icon={!isGenerating && <CheckIcon />}
                 onClick={onGenerate}
                 disabled={
                   // Number(projectData?.status) === 2 ||
                   // Number(projectData?.status) === 3 ||
-                  generationStatus === "pending" || generationStatus === "in progress"
+                  generationStatus === "in progress"
                 }
                 buttonTheme={ButtonThemes.Outline}
                 style={{
@@ -883,6 +939,35 @@ const StatusBadge = styled.div<{ status?: string }>`
         return "rgba(140,140,140,0.2)";
     }
   }};
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+`;
+
+const FullPageLoader = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 10, 12, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
 `;
 
 export default AIHumansPage;
