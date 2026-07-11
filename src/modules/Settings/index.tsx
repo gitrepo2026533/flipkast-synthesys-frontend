@@ -52,9 +52,9 @@ const Settings = () => {
     setShowApiKey({ ...showApiKey, [type]: value });
   };
 
-  useEffect(() => {
-    dispatch(getMyProfileServer());
-  }, []);
+  // useEffect(() => {
+  //   dispatch(getMyProfileServer());
+  // }, []);
 
   useEffect(() => {
     if (!profile.name) return;

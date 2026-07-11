@@ -2,7 +2,7 @@ export const products = [
   {
     title: "AI Video",
     description: "Is for text to video",
-    image: "/images/ai-humans.png",
+    image: "/images/ai-video.png",
     link: "/ai-video",
   },
   {

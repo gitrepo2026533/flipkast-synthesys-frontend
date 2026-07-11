@@ -120,6 +120,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
         updateVideoProjectServer({
           title: projectData?.title,
           projectId: Number(projectId),
+          status: projectData?.status ? Number(projectData?.status) : 1,
           slides: [
             {
               slideId: slideData.slideId,
