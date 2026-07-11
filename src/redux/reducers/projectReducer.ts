@@ -566,11 +566,28 @@ const profileReducer = (state = projectInitialState, action: any) => {
       };
     }
     case `${LOCK_VIDEO_PROJECT_SERVER}_SUCCESS`: {
+      const fetchedProject = action.payload.data.data;
+      const currentProject = state[ProjectModules.project].project;
+      let newSlides = currentProject?.slides ? [...currentProject.slides] : [];
+      if (fetchedProject?.slides?.length > 0) {
+        const fetchedSlide = fetchedProject.slides[0];
+        const slideIndex = newSlides.findIndex((s: any) => s.slideId === fetchedSlide.slideId);
+        if (slideIndex !== -1) {
+          newSlides[slideIndex] = fetchedSlide;
+        } else {
+          newSlides.push(fetchedSlide);
+        }
+      }
+
       return {
         ...state,
         [ProjectModules.project]: {
           ...state[ProjectModules.project],
-          project: action.payload.data.data,
+          project: {
+            ...(currentProject || {}),
+            ...fetchedProject,
+            slides: newSlides,
+          },
           isLoading: false,
         },
       };

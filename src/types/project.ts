@@ -35,6 +35,7 @@ export interface Slide {
   projectParagraphs?: Paragraphs[];
   audioPath?: string;
   backGroundColor?: string;
+  thumbnailImage?: string;
 }
 
 export interface Project {

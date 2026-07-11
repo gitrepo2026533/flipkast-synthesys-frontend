@@ -53,6 +53,7 @@ const FormikField = (
         onBlur={handleBlur}
         darkTheme={theme === darkTheme}
         disabled={disabled}
+        autoComplete={field.autoComplete}
       />
       {errorName && <ErrorText>{errorName}</ErrorText>}
       {field.checkbox && (
