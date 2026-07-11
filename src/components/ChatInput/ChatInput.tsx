@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import styled from "styled-components";
 import InputChip from "../Chip/inputChip";
 import { ArrowUpIcon } from "../Icons/ArrowUpIcon";
@@ -63,6 +63,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [showAttachmentMenu, setShowAttachmentMenu] =
         useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const attachmentWrapperRef = useRef<HTMLDivElement>(null);
+    const modelWrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                attachmentWrapperRef.current &&
+                !attachmentWrapperRef.current.contains(event.target as Node)
+            ) {
+                setShowAttachmentMenu(false);
+            }
+            if (
+                modelWrapperRef.current &&
+                !modelWrapperRef.current.contains(event.target as Node)
+            ) {
+                setShowModelMenu(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const handleInput = () => {
         const el = textareaRef.current;
@@ -176,7 +200,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                 <BottomBar>
                     <LeftActions>
-                        <AttachmentWrapper>
+                        <AttachmentWrapper ref={attachmentWrapperRef}>
                             <AttachmentButton
                                 onClick={() =>
                                     setShowAttachmentMenu((prev) => !prev)
@@ -187,12 +211,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                             {showAttachmentMenu && (
                                 <AttachmentMenu>
-                                    <AttachmentMenuItem
-                                        onClick={handleChooseFile}
-                                    >
-                                        Upload File
-                                    </AttachmentMenuItem>
-
                                     <AttachmentMenuItem
                                         onClick={handleChooseFile}
                                     >
@@ -216,7 +234,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </LeftActions>
 
                     <RightActions>
-                        <ModelWrapper>
+                        <ModelWrapper ref={modelWrapperRef}>
                             <ModelButton
                                 onClick={() =>
                                     setShowModelMenu((prev) => !prev)

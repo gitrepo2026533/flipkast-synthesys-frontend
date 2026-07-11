@@ -59,7 +59,7 @@ const HeaderActions = () => {
             audioPath: projectData?.slides?.[0]?.audioPath,
           },
         ],
-        status: 1,
+        status: projectData?.status ? Number(projectData?.status) : 1,
       }),
     );
     setIsEditing(false);
