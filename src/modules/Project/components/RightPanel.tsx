@@ -173,14 +173,16 @@ const RightPanelSide = ({ currentSlideId, setCurrentSlideId }: RightPanelProps) 
       return;
     }
 
-    const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+    const targetId = currentSlideId === 0
+      ? (projectData.slides?.[projectData.slides.length - 1]?.slideId || 0)
+      : (currentSlideId || projectData.slides?.[0]?.slideId);
     const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
 
     if (activeSlide) {
       setSlideData(activeSlide);
       const thumbnailSrc = activeSlide?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${activeSlide.thumbnailImage}` : "/images/mock.png";
       setThumbnailSrc(thumbnailSrc);
-      if (!currentSlideId) setCurrentSlideId(activeSlide.slideId);
+      if (!currentSlideId || currentSlideId === 0) setCurrentSlideId(activeSlide.slideId);
     } else {
       setSlideData(projectData.slides?.[0] || {});
         const thumbnailSrc = projectData.slides?.[0]?.thumbnailImage ? `${process.env.REACT_APP_API_BASE_URL}${projectData.slides?.[0]?.thumbnailImage}` : "/images/mock.png";

@@ -10,6 +10,7 @@ import { SaveIcon } from "../../../components/Icons/SaveIcon";
 import PopupModel from "../../../components/PopupModel/PopupModel";
 import Textfield, { TextfieldVariant } from "../../../components/Textfield/Textfield";
 import ThemeSwitcher from "../../../components/ThemeSwitcher/ThemeSwitcher";
+import CircularProgress from "../../../components/Icons/CircularProgress";
 import {
   getPreviewProjectServer,
   getProjectSlideServer,
@@ -33,6 +34,7 @@ const HeaderActions = () => {
   const projectData = useSelector(getProject);
   const dispatch = useDispatch();
   const [currentStatus, setCurrentStatus] = useState("pending");
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showPreviewPopup, setShowPreviewPopup] = useState(false);
   const isAvatarProject = projectData?.projectTypeId === ProjectType.AVT;
   const navigate = useNavigate();
@@ -72,6 +74,7 @@ const HeaderActions = () => {
   };
 
   const onGenerate = async () => {
+    setIsGenerating(true);
     try {
       const response: any = await dispatch(getPreviewProjectServer(Number(projectData?.projectId)));
       const previewDataResponse = response?.payload?.data;
@@ -80,12 +83,15 @@ const HeaderActions = () => {
         dispatch(mergeVideosProjectServer(Number(projectData?.projectId)));
         setTimeout(() => {
           dispatch(getProjectSlideServer(Number(projectData?.projectId), Number(projectData?.slides?.[0]?.slideId)));
+          setIsGenerating(false);
         }, 1500);
       } else {
         setShowPreviewPopup(true);
+        setIsGenerating(false);
       }
     } catch (error) {
       setShowPreviewPopup(true);
+      setIsGenerating(false);
     }
   };
 
@@ -176,10 +182,10 @@ const HeaderActions = () => {
           />
 
           <Button
-            text="Generate"
-            icon={<CheckIcon />}
+            text={isGenerating ? <CircularProgress color="#fff" /> : "Generate"}
+            icon={!isGenerating && <CheckIcon />}
             onClick={onGenerate}
-            disabled={Number(projectData?.status) === 2 || Number(projectData?.status) === 3}
+            disabled={isGenerating || Number(projectData?.status) === 2 || Number(projectData?.status) === 3}
             buttonTheme={ButtonThemes.Outline}
             style={{
               height: "40px",

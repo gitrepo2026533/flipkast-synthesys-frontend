@@ -534,21 +534,37 @@ const profileReducer = (state = projectInitialState, action: any) => {
     // }
     case `${UPDATE_VIDEO_PROJECT_SERVER}_SUCCESS`: {
       const updatedProject = action.payload.data.data;
-      const projectSlide = updatedProject?.slides?.[0];
+      const currentProject = state[ProjectModules.project].project;
+      let newSlides = currentProject?.slides ? [...currentProject.slides] : [];
 
-      const currentSlides = state[ProjectModules.project].slidesData || [];
-
-      const slideExists = currentSlides.some((slide) => slide.slideId === projectSlide?.slideId);
-      let updatedSlides: Slide[] = [];
-      if (!slideExists) {
-        updatedSlides = [...currentSlides, projectSlide];
+      if (updatedProject?.slides && updatedProject.slides.length > 0) {
+        updatedProject.slides.forEach((fetchedSlide: any) => {
+          const slideIndex = newSlides.findIndex(
+            (s: any) => s.slideId === fetchedSlide.slideId || (fetchedSlide.order === s.order && s.slideId === 0),
+          );
+          if (slideIndex !== -1) {
+            newSlides[slideIndex] = fetchedSlide;
+          } else {
+            const draftIndex = newSlides.findIndex((s: any) => s.slideId === 0);
+            if (draftIndex !== -1) {
+              newSlides[draftIndex] = fetchedSlide;
+            } else {
+              newSlides.push(fetchedSlide);
+            }
+          }
+        });
       }
+
       return {
         ...state,
         [ProjectModules.project]: {
           ...state[ProjectModules.project],
-          slidesData: slideExists ? currentSlides : updatedSlides,
-          project: updatedProject,
+          slidesData: newSlides,
+          project: {
+            ...(currentProject || {}),
+            ...updatedProject,
+            slides: newSlides,
+          },
           isLoading: false,
           draftSlideData: null,
           isDraftSlide: false,

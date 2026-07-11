@@ -180,7 +180,10 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
     if (isDraftSlide && draftSlideData?.slideId === 0) {
       setSlideData(draftSlideData);
     } else {
-      const targetId = currentSlideId || projectData.slides?.[0]?.slideId;
+      const targetId =
+        currentSlideId === 0
+          ? projectData.slides?.[projectData.slides.length - 1]?.slideId || 0
+          : currentSlideId || projectData.slides?.[0]?.slideId;
       const activeSlide = projectData.slides?.find((s: any) => s.slideId === targetId);
       
       if (activeSlide) {
@@ -287,7 +290,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                           </Timestamp>
                         </MessageBubble>
                       </MessageRow>
-                    ) : (
+                    ) : para.errorMessage ? (
                       <ErrorContainer>
                         <ErrorTitle>
                           ⚠️ AI Generation Failed
@@ -296,7 +299,7 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
                         <ErrorMessage> {para?.errorMessage}
                         </ErrorMessage>
                       </ErrorContainer>
-                    )}
+                    ) : null}
                   </ConversationPair>
                 ))
               )}

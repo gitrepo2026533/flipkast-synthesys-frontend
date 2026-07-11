@@ -53,7 +53,7 @@ const Project = () => {
     <Wrapper>
       {isLoading ? (
         <LoaderWrapper>
-          <CircularProgress />
+          <CircularProgress color="#fff" />
         </LoaderWrapper>
       ) : (
         <>
