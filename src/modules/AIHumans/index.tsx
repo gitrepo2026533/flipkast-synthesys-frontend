@@ -524,20 +524,12 @@ const AIHumansPage = () => {
       setInitialSceneAdded(true);
     }
   }, [scenes.length, projectId, hasFetchedAssets, userAssetsLoading, initialSceneAdded, userAssets, addScene]);
-  if (isLoading) {
-    return (
-      <LoaderWrapper>
-        <CircularProgress />
-      </LoaderWrapper>
-    );
-  }
-
   return (
     <Wrapper>
       {(isSavingDraft || isGenerating || isLoading) && (
-        <FullPageLoader>
+        <LoaderWrapper>
           <CircularProgress color="#fff" />
-        </FullPageLoader>
+        </LoaderWrapper>
       )}
       <ProfileHumanSidebar activeSidebarItem={activeSidebarItem} setActiveSidebarItem={setActiveSidebarItem} />
       <PageWrapper id="pagewrapperid">
@@ -950,7 +942,7 @@ const LoaderWrapper = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: ${({ theme }) => theme.primaryBackground};
   z-index: 9999;
 `;
 
