@@ -28,7 +28,7 @@ const HomePage = () => {
   const [activeProject, setActiveProject] = useState<number>();
 
   useEffect(() => {
-    dispatch(getProjectListServer({ keyword: "" }));
+    // dispatch(getProjectListServer({ keyword: "" }));
     // dispatch(getActorsServer({ keyword: "" }));
     // dispatch(getMyProfileServer());
     // dispatch(changePasswordServer({ newPassword: "123123", oldPassword: "customer@gmail.com" }));
