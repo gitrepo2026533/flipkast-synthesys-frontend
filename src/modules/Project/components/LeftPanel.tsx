@@ -218,11 +218,14 @@ const LeftPanelSide = ({ currentSlideId }: LeftPanelProps) => {
 
   const [previewChips, setPreviewChips] = useState<Array<{ label: string; title: string; image: any; onRemove: () => void }>>([]);
 
+  const slideIndex = projectData?.slides?.findIndex((s: any) => s.slideId === slideData?.slideId) ?? -1;
+  const displaySlideNumber = slideIndex >= 0 ? slideIndex + 1 : (projectData?.slides?.length ?? 0) + 1;
+
   return (
     <LeftPanel>
       {/* ── Top Header ── */}
       <LeftHeader>
-        <HeaderTitle>{slideData.slideId}</HeaderTitle>
+        <HeaderTitle>Slide #{displaySlideNumber}</HeaderTitle>
         {/* <HeaderActions>
         </HeaderActions> */}
         <SlideStatusBadge $active={slideData?.isActive}>

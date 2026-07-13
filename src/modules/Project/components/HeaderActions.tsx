@@ -125,7 +125,10 @@ const HeaderActions = () => {
                 }}
                 endAdornment={
                   <SaveAdornmentButton
-                    onClick={handleSaveTitle}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSaveTitle();
+                    }}
                     aria-label="Save title"
                     title="Save (Enter)"
                     type="button"
