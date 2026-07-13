@@ -453,7 +453,7 @@ const AIHumansPage = () => {
         if (didApikeyError) {
           toast.error(didApikeyError);
         } else {
-          toast.success("Project updated successfully");
+          // toast.success("Project updated successfully");
         }
       } else {
         const response: any = await dispatch(
@@ -472,7 +472,7 @@ const AIHumansPage = () => {
         if (didApikeyError) {
           toast.error(didApikeyError);
         } else {
-          toast.success("Project created successfully");
+          // toast.success("Project created successfully");
         }
         targetProjectId = response?.payload?.data?.data?.projectId;
       }
@@ -526,7 +526,7 @@ const AIHumansPage = () => {
   }, [scenes.length, projectId, hasFetchedAssets, userAssetsLoading, initialSceneAdded, userAssets, addScene]);
   return (
     <Wrapper>
-      {(isSavingDraft || isGenerating || isLoading) && (
+      {(isSavingDraft || isLoading) && (
         <LoaderWrapper>
           <CircularProgress color="#fff" />
         </LoaderWrapper>
@@ -942,7 +942,8 @@ const LoaderWrapper = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: ${({ theme }) => theme.primaryBackground};
+  background: rgba(25, 27, 31, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 9999;
 `;
 
