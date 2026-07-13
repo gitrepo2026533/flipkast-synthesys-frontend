@@ -98,7 +98,7 @@ const AiAvatar = () => {
                 <ProjectsLabel>My Projects</ProjectsLabel>
                 <Textfield
                   value={keyword}
-                  placeholder="Search for voice actors, languages etc."
+                  placeholder="Search"
                   startAdornment={<SearchIcon />}
                   onChange={handleSearchChange}
                 />
